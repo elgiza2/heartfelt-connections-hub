@@ -1500,8 +1500,21 @@ const ChatPage = () => {
     } catch (err) {
       // Any unhandled failure must still release the composer.
       isSubmittingRef.current = false;
+      setIsLoading(false);
+      setIsThinking(false);
       console.error("[send] unhandled error", err);
       toast.error("حصلت مشكلة أثناء الإرسال. جرّب تاني.");
+    } finally {
+      // Safety net: some routed branches return early without touching the
+      // loading flags. If nothing is actually streaming any more, the composer
+      // must not stay stuck on "stop".
+      isSubmittingRef.current = false;
+      setTimeout(() => {
+        if (!abortControllerRef.current && !getActiveComputerRun()) {
+          setIsLoading(false);
+          setIsThinking(false);
+        }
+      }, 400);
     }
   };
 
@@ -1514,10 +1527,12 @@ const ChatPage = () => {
     if (!text.trim() && attachedFiles.length === 0 && !hasFrames) return;
     if (isLoading) return;
     if (isSubmittingRef.current) {
-      // Release locks older than a minute instead of blocking forever.
-      if (Date.now() - submitLockAtRef.current < 60_000) return;
+      // Release locks older than 15s instead of blocking the composer for a
+      // full minute after a branch that forgot to unlock.
+      if (Date.now() - submitLockAtRef.current < 15_000) return;
       isSubmittingRef.current = false;
     }
+
     // Streak/achievement bookkeeping is telemetry, not part of the send path.
     // It used to be `await`ed here, which meant the user's own bubble could not
     // render until two lazy chunks finished downloading — the single biggest
