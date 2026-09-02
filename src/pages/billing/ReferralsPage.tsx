@@ -5,15 +5,10 @@ import {
   useCallback,
   createContext,
   useContext,
-  useRef,
-  Suspense,
-  lazy,
 } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { QrCode, X, Download, Share2, Check, Copy } from "lucide-react";
-
-const QRCodeSVG = lazy(() => import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })));
+import { translateExactText, useUserLang } from "@/lib/authI18n";
 
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/layout/AppSidebar";
@@ -57,7 +52,6 @@ function useIsDesktop() {
 export const WHATSAPP_PHONE = "201098821812";
 export const PROMOTER_MESSAGE =
   "Hello, I want to join the Megsy AI promotion / referral system. Please send me the details.";
-export const CREDITS_PER_SIGNUP = 15;
 export const MIN_PAYOUT = 10;
 
 /* Neutral, quiet palette — no gradients, no neon. */
@@ -257,7 +251,7 @@ const ReferralsPage = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const onRewards = pathname.endsWith("/rewards");
-  const qrRef = useRef<SVGSVGElement | null>(null);
+  const lang = useUserLang();
   const [userId, setUserId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [refs, setRefs] = useState<Referral[]>([]);
@@ -266,7 +260,6 @@ const ReferralsPage = () => {
   const [tasks, setTasks] = useState<RewardTask[]>([]);
   const [userTasks, setUserTasks] = useState<UserTask[]>([]);
   const [justCopied, setJustCopied] = useState(false);
-  const [qrOpen, setQrOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDesktop = useIsDesktop();
   const [sidebarCollapsed] = useSidebarCollapsed();
@@ -362,12 +355,12 @@ const ReferralsPage = () => {
     await safeCopyText(link);
     setJustCopied(true);
     setTimeout(() => setJustCopied(false), 1600);
-    toast.success("Link copied");
+    toast.success(translateExactText("Invite link copied", lang));
   };
 
   const shareLink = async () => {
     if (!link) return;
-    const shareText = `Try Megsy AI and get ${CREDITS_PER_SIGNUP} free credits with my invite link:\n${link}`;
+    const shareText = `Join Megsy AI with my invite link:\n${link}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Megsy AI", text: shareText, url: link });
@@ -377,26 +370,12 @@ const ReferralsPage = () => {
       }
     }
     await safeCopyText(shareText);
-    toast.success("Invite message copied");
+    toast.success(translateExactText("Invite message copied", lang));
   };
 
   const openPromoter = () => {
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(PROMOTER_MESSAGE)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const downloadQR = () => {
-    if (!qrRef.current) return;
-    const source = new XMLSerializer().serializeToString(qrRef.current);
-    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `megsy-referral-qr-${code}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const ctx: ReferralsContextValue = {
@@ -418,18 +397,18 @@ const ReferralsPage = () => {
     copyLink,
     shareLink,
     openPromoter,
-    openQr: () => setQrOpen(true),
+    openQr: () => {},
     reload: loadData,
   };
 
   const content = (
-    <div className={`referral-canvas mx-auto flex min-h-full w-full max-w-[980px] flex-col px-4 sm:px-6 ${onRewards ? "pb-10" : "pb-[132px]"} pt-3 md:px-10 md:pt-7`}>
+    <div className={`mx-auto flex min-h-full w-full max-w-[620px] flex-col px-5 ${onRewards ? "pb-10" : "pb-[150px]"} pt-3 md:pt-7`}>
       {onRewards || isDesktop ? null : (
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu"
-          className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.45)] text-[hsl(var(--referral-ink))] shadow-sm backdrop-blur transition active:scale-95"
+          className="mb-2 flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent text-foreground transition active:scale-95"
         >
           <SidebarToggleIcon />
         </button>
@@ -440,30 +419,29 @@ const ReferralsPage = () => {
     </div>
   );
 
-  /** Sticky action bar — the primary invite action remains available while reading. */
+  /** Pinned actions — copy the invite link, or go straight to Pro. */
   const actionBar = (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 14px)" }}
     >
-      <div className="h-20 bg-gradient-to-t from-[hsl(var(--referral-sky))] via-[hsl(var(--referral-sky)/0.78)] to-transparent" />
-      <div className="pointer-events-auto mx-auto w-full max-w-[980px] px-4 sm:px-6 md:px-10">
-        <div className="flex items-center gap-2 rounded-[24px] border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.82)] p-2 shadow-[0_20px_50px_-25px_hsl(var(--referral-ink)/0.45)] backdrop-blur-xl">
+      <div className="h-5 bg-background" />
+      <div className="pointer-events-auto mx-auto w-full max-w-[620px] border-t border-border bg-background px-5 pt-3">
+        <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={copyLink}
+            onClick={shareLink}
             disabled={!link}
-            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[18px] bg-[hsl(var(--referral-ink))] px-5 text-[14px] font-semibold tracking-tight text-[hsl(var(--background))] transition-transform duration-200 hover:bg-[hsl(var(--referral-ink)/0.9)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] bg-foreground px-5 text-[15px] font-semibold text-background transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <span aria-hidden className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-[hsl(var(--background)/0.2)] to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
-            {justCopied ? <Check className="h-[18px] w-[18px]" /> : <Copy className="h-[18px] w-[18px]" />}
-            {justCopied ? "Copied" : "Copy invite link"}
+            {translateExactText("Invite friends", lang)}
           </button>
-          <button type="button" onClick={shareLink} disabled={!link} aria-label="Share invite link" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-sky)/0.7)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-sky))] active:scale-[0.96] disabled:opacity-40">
-            <Share2 className="h-[18px] w-[18px]" />
-          </button>
-          <button type="button" onClick={() => setQrOpen(true)} disabled={!link} aria-label="Show QR code" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-lilac)/0.35)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-lilac)/0.5)] active:scale-[0.96] disabled:opacity-40">
-            <QrCode className="h-[18px] w-[18px]" />
+          <button
+            type="button"
+            onClick={() => navigate("/settings/billing")}
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] border border-border bg-background px-5 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99]"
+          >
+            {translateExactText("Get Pro", lang)}
           </button>
         </div>
       </div>
@@ -477,14 +455,14 @@ const ReferralsPage = () => {
   return (
     <ReferralsCtx.Provider value={ctx}>
       {isDesktop ? (
-        <div className="flex h-[100dvh] w-full overflow-hidden bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
           <aside
             style={{ width: sidebarWidth, minWidth: sidebarWidth, flexBasis: sidebarWidth }}
             className="relative z-40 hidden shrink-0 overflow-hidden transition-[width,min-width,flex-basis] duration-300 md:flex"
           >
             <AppSidebar open inline onClose={() => {}} onNewChat={() => navigate("/")} />
           </aside>
-          <main className="relative min-w-0 flex-1 overflow-y-auto bg-[hsl(var(--referral-sky))]">
+          <main className="relative min-w-0 flex-1 overflow-y-auto bg-background">
             {content}
             {onRewards ? null : actionBar}
           </main>
@@ -496,31 +474,14 @@ const ReferralsPage = () => {
           onNewChat={() => navigate("/")}
           currentMode="chat"
         >
-          <div className="min-h-[100dvh] bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
+          <div className="min-h-[100dvh] bg-background text-foreground">
             {content}
             {onRewards ? null : actionBar}
           </div>
         </MobilePushShell>
       )}
 
-      {qrOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[hsl(var(--referral-ink)/0.72)] px-5 backdrop-blur-md" onClick={() => setQrOpen(false)}>
-          <div className="relative w-full max-w-sm rounded-[28px] border border-[hsl(var(--background)/0.5)] bg-[hsl(var(--referral-sky))] p-6 text-[hsl(var(--referral-ink))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.5)] text-[hsl(var(--referral-ink)/0.7)]">
-              <X className="h-4 w-4" />
-            </button>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.5)]">Megsy invitation</p>
-            <h2 className="mt-2 font-serif text-[28px] leading-none">Scan to join Pro.</h2>
-            <div className="mx-auto mt-5 grid w-max place-items-center rounded-[22px] bg-[hsl(var(--background))] p-5 shadow-lg">
-              {link ? <Suspense fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}><QRCodeSVG ref={qrRef} value={link} size={200} bgColor="#FFFFFF" fgColor="#0a0a0a" level="M" /></Suspense> : <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <GhostButton onClick={copyLink}><Copy className="h-4 w-4" /> Copy</GhostButton>
-              <GhostButton onClick={downloadQR}><Download className="h-4 w-4" /> Download</GhostButton>
-            </div>
-          </div>
-        </div>
-      )}
+
     </ReferralsCtx.Provider>
   );
 };

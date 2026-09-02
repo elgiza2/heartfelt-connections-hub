@@ -18,6 +18,7 @@ import { EGYPTIAN_DICT } from "@/lib/i18n/egyptianDict";
 import { EGYPTIAN_EXTRA } from "@/lib/i18n/egyptianExtra";
 import { EGYPTIAN_PAGES } from "@/lib/i18n/egyptianPages";
 import { EGYPTIAN_PAGES_2 } from "@/lib/i18n/egyptianPages2";
+import { EGYPTIAN_PAGES_4 } from "@/lib/i18n/egyptianPages4";
 import { setPayRegion } from "@/lib/payRegion";
 
 
@@ -442,6 +443,7 @@ export function translateExactText(text: string, lang?: AuthLang): string {
     EGYPTIAN_EXTRA[normalized] ||
     EGYPTIAN_PAGES[normalized] ||
     EGYPTIAN_PAGES_2[normalized] ||
+    EGYPTIAN_PAGES_4[normalized] ||
     EGYPTIAN_DICT[normalized] ||
     text
   );

@@ -3,6 +3,7 @@ import { EGYPTIAN_EXTRA } from "./egyptianExtra";
 import { EGYPTIAN_PAGES } from "./egyptianPages";
 import { EGYPTIAN_PAGES_2 } from "./egyptianPages2";
 import { EGYPTIAN_PAGES_3 } from "./egyptianPages3";
+import { EGYPTIAN_PAGES_4 } from "./egyptianPages4";
 
 const DICT: Record<string, string> = {
   ...EGYPTIAN_DICT,
@@ -10,6 +11,7 @@ const DICT: Record<string, string> = {
   ...EGYPTIAN_PAGES,
   ...EGYPTIAN_PAGES_2,
   ...EGYPTIAN_PAGES_3,
+  ...EGYPTIAN_PAGES_4,
 };
 
 

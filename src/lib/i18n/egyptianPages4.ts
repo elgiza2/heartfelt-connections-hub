@@ -93,4 +93,36 @@ export const EGYPTIAN_PAGES_4: Record<string, string> = {
   "Yes — I want the best": "أيوه — عايز الأفضل",
   "I've been warned, let me in": "خدت تحذيري، دخّلني",
   "Tap now to enter": "دوس دلوقتي تدخل",
+
+  // ------------------------------------------------------- صفحة الإحالة (Pro)
+  "Megsy Pro invitation": "دعوة ميجسي برو",
+  "Invite 5 friends, get Pro free": "اعزم 5 أصحاب، وخد برو مجانًا",
+  "Every friend who joins Megsy AI with your link brings you closer to free Pro access for a limited time.":
+    "كل صاحب يسجل في ميجسي بلينكك بيقرّبك أكتر من برو مجانًا لفترة محدودة.",
+  "Megsy Pro invitation artwork": "صورة دعوة ميجسي برو",
+  "Friends joined": "أصحاب سجّلوا",
+  "Left for Pro": "فاضل لبرو",
+  "How it works": "بيشتغل إزاي",
+  "Share your link": "شير اللينك بتاعك",
+  "Send your personal Megsy invite to friends.": "ابعت دعوة ميجسي بتاعتك لأصحابك.",
+  "Five friends join": "خمس أصحاب يسجلوا",
+  "They create an account through your invitation.": "بيعملوا حساب من خلال دعوتك.",
+  "Pro is yours": "برو يبقى بتاعك",
+  "Your limited-time Pro access starts automatically.": "اشتراك برو لفترة محدودة بيتفعّل أوتوماتيك.",
+  "No card required. No auto renewal. Your Pro access begins the moment the fifth friend joins.":
+    "من غير كارت. ومن غير تجديد تلقائي. برو بيبدأ أول ما خامس صاحب يسجل.",
+  "Your invitation progress": "تقدّم دعوتك",
+  "Pro is active": "برو شغّال",
+  "Your free Pro access is active.": "اشتراك برو المجاني شغّال.",
+  "Verified invitations count toward your free Pro access.":
+    "الدعوات المؤكدة بتتحسب لاشتراك برو المجاني.",
+  "Couldn't load your Pro progress. Refresh the page to try again.":
+    "مقدرناش نحمّل تقدّم برو. اعمل تحديث للصفحة وجرّب تاني.",
+  "Copy invite link": "انسخ لينك الدعوة",
+  "Invite friends": "اعزم أصحابك",
+  "Invite link copied": "لينك الدعوة اتنسخ",
+  "Invite message copied": "رسالة الدعوة اتنسخت",
+  "friends joined": "أصحاب سجّلوا",
+  "Get Pro": "خد برو",
+  "Scan to join Pro": "امسح الكود وانضم لبرو",
 };
