@@ -281,7 +281,9 @@ export async function streamChat({
         onModel,
         onUsage,
         onReasoning,
+        thinking: deepThinkingEnabled(),
         force: true,
+
       });
       return outcome === "answered" && receivedAnyContent;
     } catch {
