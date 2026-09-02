@@ -92,7 +92,7 @@ export const EGYPTIAN_PAGES_4: Record<string, string> = {
   "Running on its own computer": "شغّال على كمبيوتره لوحده",
   "Yes — I want the best": "أيوه — عايز الأفضل",
   "I've been warned, let me in": "خدت تحذيري، دخّلني",
-  "Tap now to enter": "دوس دلوقتي تدخل",,
+  "Tap now to enter": "دوس دلوقتي تدخل",
 
   // ------------------------------------------------------- صفحة الإحالة (Pro)
   "Megsy Pro invitation": "دعوة ميجسي برو",
