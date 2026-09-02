@@ -174,4 +174,18 @@ export const EGYPTIAN_PAGES_4: Record<string, string> = {
   "Tell us why so we can improve.": "قولنا ليه عشان نتحسّن.",
   Upgrade: "ترقية",
   Referrals: "الإحالات",
+  "Confirm cancel": "أكّد الإلغاء",
+  "Could not submit request": "مقدرناش نبعت الطلب",
+  "Please tell us why you're cancelling": "قولنا بتلغي ليه",
+  "Cancellation request sent. Our team will reach out shortly.":
+    "طلب الإلغاء اتبعت. الفريق هيتواصل معاك قريب.",
+  "Your discount request is in — we'll apply it within a few minutes.":
+    "طلب الخصم وصلنا — هنطبّقه خلال دقايق.",
+  "Too expensive": "غالي أوي",
+  "Not using it enough": "مش بستخدمه كفاية",
+  "Missing features": "ناقصه مميزات",
+  "Found an alternative": "لقيت بديل",
+  Other: "حاجة تانية",
+  active: "شغّال",
+  trialing: "تجربة",
 };
