@@ -424,6 +424,10 @@ export async function streamChat({
         activeSkill,
         availableSkills,
         customSystem,
+        // Deep-thinking toggle: the backend turns the model's reasoning stream
+        // on so the UI's thinking panel has real content.
+        thinking: deepThinkingEnabled(),
+
         ...turnCtxPayload,
         zone: (typeof window !== "undefined" && (window as any).__MEGSY_ZONE__) || "megsy",
       });
