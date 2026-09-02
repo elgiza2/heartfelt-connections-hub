@@ -58,20 +58,25 @@ export async function generateRunSummary(params: {
   conversationId?: string | null;
 }): Promise<string> {
   const { task, steps, output, failed, conversationId } = params;
+  const { cleanTrace } = await import("@/lib/computer/traceCleanup");
+  const readableSteps = cleanTrace(steps);
   return ask(
     [
       failed
-        ? "A computer task did NOT finish. Explain briefly what was attempted, where it stopped, and one concrete next step."
-        : "A computer task just finished. Tell the user what was done and what the outcome is.",
-      "Write 2-4 sentences of plain text: no markdown, no headings, no bullets, no emojis.",
-      "Use the exact same language and dialect as the request.",
+        ? "A computer task did NOT finish. Report what was attempted, exactly where it stopped, what was produced anyway, and the concrete next step."
+        : "A computer task just finished. Write the final report for the user.",
+      "Write a complete report, not a teaser: a short opening line with the outcome, then the key results (findings, links, files, numbers) as a few short bullets, then one closing line with what the user can do next.",
+      "Write it entirely in the exact same language and dialect as the request — never mix languages, never leave English fragments in an Arabic report.",
+      "Never expose internal engine text: no step ids, checkpoints, tool names, JSON, stack traces, or phrases like 'checkpoint saved' or 'sandbox unavailable'. Translate any such detail into plain user-facing wording or drop it.",
+      "Never claim something succeeded unless the steps or output show it.",
       "",
       `Request: ${task}`,
-      steps.length ? `Steps performed:\n${steps.slice(-20).join("\n")}` : "",
-      output ? `Raw agent output:\n${String(output).slice(0, 4000)}` : "",
+      readableSteps.length ? `Steps performed:\n${readableSteps.slice(-25).join("\n")}` : "",
+      output ? `Raw agent output:\n${String(output).slice(0, 6000)}` : "",
     ]
       .filter(Boolean)
       .join("\n"),
     conversationId,
   );
 }
+
