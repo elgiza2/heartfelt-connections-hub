@@ -1,4 +1,4 @@
-/** @doc Referral program — clean, minimal layout: invite, points, rewards. */
+/** @doc Referral program — invite 5 friends, get Pro free. No points system. */
 import {
   useState,
   useEffect,
@@ -58,7 +58,6 @@ export const WHATSAPP_PHONE = "201098821812";
 export const PROMOTER_MESSAGE =
   "Hello, I want to join the Megsy AI promotion / referral system. Please send me the details.";
 export const CREDITS_PER_SIGNUP = 15;
-export const POINTS_PER_SIGNUP = 10;
 export const MIN_PAYOUT = 10;
 
 /* Neutral, quiet palette — no gradients, no neon. */
@@ -112,17 +111,6 @@ export interface UserTask {
   progress: number;
   completed_at: string | null;
   awarded_credits: number;
-}
-export interface CatalogReward {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  plan: string;
-  billing_period: "monthly" | "yearly";
-  points_cost: number;
-  stock_total: number;
-  stock_claimed: number;
 }
 
 export const fmtDate = (d: string) =>
@@ -225,8 +213,6 @@ export interface ReferralsContextValue {
   wds: Withdrawal[];
   tasks: RewardTask[];
   userTasks: UserTask[];
-  points: number;
-  rewards: CatalogReward[];
   totalEarned: number;
   committed: number;
   available: number;
@@ -234,7 +220,6 @@ export interface ReferralsContextValue {
   canWithdraw: boolean;
   justCopied: boolean;
   claimTask: (t: RewardTask) => void;
-  redeemReward: (slug: string) => Promise<void>;
   copyLink: () => Promise<void>;
   shareLink: () => Promise<void>;
   openPromoter: () => void;
@@ -251,8 +236,6 @@ const REFERRALS_FALLBACK: ReferralsContextValue = {
   wds: [],
   tasks: [],
   userTasks: [],
-  points: 0,
-  rewards: [],
   totalEarned: 0,
   committed: 0,
   available: 0,
@@ -260,7 +243,6 @@ const REFERRALS_FALLBACK: ReferralsContextValue = {
   canWithdraw: false,
   justCopied: false,
   claimTask: () => {},
-  redeemReward: async () => {},
   copyLink: async () => {},
   shareLink: async () => {},
   openPromoter: () => {},
@@ -283,8 +265,6 @@ const ReferralsPage = () => {
   const [wds, setWds] = useState<Withdrawal[]>([]);
   const [tasks, setTasks] = useState<RewardTask[]>([]);
   const [userTasks, setUserTasks] = useState<UserTask[]>([]);
-  const [points, setPoints] = useState(0);
-  const [rewards, setRewards] = useState<CatalogReward[]>([]);
   const [justCopied, setJustCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -342,28 +322,6 @@ const ReferralsPage = () => {
     setTasks((tk.data as RewardTask[]) ?? []);
     setUserTasks((ut.data as UserTask[]) ?? []);
 
-    // Points + reward catalogue live in newer tables; degrade quietly when absent.
-    const anyDb = supabase as any;
-    try {
-      const { data: pts } = await anyDb
-        .from("referral_points")
-        .select("points")
-        .eq("user_id", user.id);
-      if (Array.isArray(pts))
-        setPoints(pts.reduce((s: number, x: any) => s + Number(x.points || 0), 0));
-    } catch {
-      /* table not provisioned yet */
-    }
-    try {
-      const { data: cat } = await anyDb
-        .from("reward_catalog")
-        .select("*")
-        .eq("active", true)
-        .order("sort_order");
-      if (Array.isArray(cat)) setRewards(cat as CatalogReward[]);
-    } catch {
-      /* table not provisioned yet */
-    }
   }, []);
 
   useEffect(() => {
@@ -388,23 +346,6 @@ const ReferralsPage = () => {
     // Credit grants must be verified and awarded atomically by a privileged
     // backend flow; never trust a browser-written completion row or amount.
     toast.info("This reward is awaiting secure verification");
-  };
-
-  const redeemReward = async (slug: string) => {
-    const { data, error } = await (supabase as any).rpc("redeem_reward", { p_reward_slug: slug });
-    if (error) return void toast.error(error.message);
-    const res = data as { ok?: boolean; error?: string } | null;
-    if (!res?.ok) {
-      const msg =
-        res?.error === "insufficient_points"
-          ? "You don't have enough points yet"
-          : res?.error === "out_of_stock"
-            ? "This reward is fully claimed"
-            : "Couldn't redeem this reward";
-      return void toast.error(msg);
-    }
-    toast.success("Redeemed — our team will activate your plan shortly");
-    loadData();
   };
 
   const link = code ? `${window.location.origin}/ref/${code}` : "";
@@ -467,8 +408,6 @@ const ReferralsPage = () => {
     wds,
     tasks,
     userTasks,
-    points,
-    rewards,
     totalEarned,
     committed,
     available,
@@ -476,7 +415,6 @@ const ReferralsPage = () => {
     canWithdraw,
     justCopied,
     claimTask,
-    redeemReward,
     copyLink,
     shareLink,
     openPromoter,
