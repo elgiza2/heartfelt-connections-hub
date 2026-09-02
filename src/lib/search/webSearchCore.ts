@@ -140,7 +140,7 @@ async function braveSearch(query: string, count: number, offset = 0): Promise<We
       // fall back to the first meaningful text node, so results never arrive
       // as bare links — a snippet-less result is useless to the model.
       const snippet = decodeHtml(
-        block.match(/class="[^"]*\bcontent\b[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
+        block.match(/class="content[ "][^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
           block.match(/class="snippet-description[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
           block.match(/class="[^"]*snippet-content[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
           "",
