@@ -72,7 +72,6 @@ export const EGYPTIAN_DICT: Record<string, string> = {
 "AI-Generated Output": "إخراج تم إنشاؤه بواسطة الذكاء الاصطناعي",
 "API Platform": "منصة API",
 "ASSETS": "الملفات",
-"Abdalla Mohamed": "عبدالله محمد",
 "About": "عن",
 "About Megsy AI": "عن Megsy AI",
 "About Megsy AI — One Workspace for Chat, Image, Video & Code": "عن Megsy AI — مساحة شغل واحدة للدردشة والصور والفيديو والكود",
