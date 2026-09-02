@@ -6,6 +6,11 @@ import {
   STYLE_LABELS_AR,
   type ResponseStyle,
 } from "@/lib/responseStyle";
+import {
+  readChatModelPreferences,
+  setChatModelPreferences,
+  type ChatModelPreferences,
+} from "@/lib/chatModelPreferences";
 
 const OPTIONS: Array<{ id: ResponseStyle; icon: typeof Sparkles; description: string }> = [
   { id: "auto", icon: Sparkles, description: "Adapts the answer to your request" },
