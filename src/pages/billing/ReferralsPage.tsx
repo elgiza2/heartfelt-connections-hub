@@ -15,6 +15,10 @@ import AppSidebar from "@/components/layout/AppSidebar";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import MobilePushShell from "@/components/layout/MobilePushShell";
 import { safeCopyText } from "@/lib/safeClipboard";
+import {
+  useReferralMilestone,
+  type UseReferralMilestone,
+} from "@/hooks/useReferralMilestone";
 
 /** Same sidebar toggle glyph used across the app's mobile headers. */
 const SidebarToggleIcon = () => (
@@ -219,6 +223,7 @@ export interface ReferralsContextValue {
   openPromoter: () => void;
   openQr: () => void;
   reload: () => void;
+  milestone: UseReferralMilestone;
 }
 
 const REFERRALS_FALLBACK: ReferralsContextValue = {
