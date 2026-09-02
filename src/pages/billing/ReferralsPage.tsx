@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { translateExactText, useUserLang } from "@/lib/authI18n";
 
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/layout/AppSidebar";
@@ -251,7 +252,7 @@ const ReferralsPage = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const onRewards = pathname.endsWith("/rewards");
-  const qrRef = useRef<SVGSVGElement | null>(null);
+  const lang = useUserLang();
   const [userId, setUserId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [refs, setRefs] = useState<Referral[]>([]);
@@ -260,7 +261,6 @@ const ReferralsPage = () => {
   const [tasks, setTasks] = useState<RewardTask[]>([]);
   const [userTasks, setUserTasks] = useState<UserTask[]>([]);
   const [justCopied, setJustCopied] = useState(false);
-  const [qrOpen, setQrOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isDesktop = useIsDesktop();
   const [sidebarCollapsed] = useSidebarCollapsed();
