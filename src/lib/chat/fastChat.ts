@@ -55,6 +55,7 @@ export async function tryFastChat({
   onUsage,
   onReasoning,
   force,
+  thinking,
 }: {
   messages: FastMsg[];
   authToken: string;
@@ -67,6 +68,8 @@ export async function tryFastChat({
   onReasoning?: (chunk: string) => void;
   /** Answer even when the turn looks complex (used as a rescue path). */
   force?: boolean;
+  /** The user's deep-thinking toggle for this turn. */
+  thinking?: boolean;
 }): Promise<FastChatOutcome> {
   let resp: Response;
   try {
@@ -78,13 +81,18 @@ export async function tryFastChat({
         Authorization: `Bearer ${authToken}`,
         "x-anon-fingerprint": fingerprint,
       },
-      body: JSON.stringify(force ? { messages, force: true } : { messages }),
+      body: JSON.stringify({
+        messages,
+        thinking: thinking === true,
+        ...(force ? { force: true, maxTokens: 8192 } : {}),
+      }),
       signal,
     });
   } catch (e) {
     if (signal?.aborted) throw e;
     return "escalate";
   }
+
 
   const contentType = resp.headers.get("content-type") || "";
   if (!resp.ok || !resp.body || !contentType.includes("text/event-stream")) {
