@@ -284,56 +284,60 @@ const ReferralsPage = () => {
   const sidebarWidth = sidebarCollapsed ? 60 : 320;
 
   const loadData = useCallback(async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    setUserId(user.id);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
 
-    const { data: codes } = await supabase
-      .from("referral_codes")
-      .select("code")
-      .eq("user_id", user.id)
-      .limit(1);
-    let row = codes?.[0] as { code: string } | undefined;
-    if (!row) {
-      const newCode = `MEGSY-${user.id.substring(0, 6).toUpperCase()}`;
-      await supabase
+      const { data: codes } = await supabase
         .from("referral_codes")
-        .insert({ user_id: user.id, code: newCode, referral_mode: "cash" });
-      row = { code: newCode };
-    }
-    setCode(row.code);
-
-    const [r, e, w, tk, ut] = await Promise.all([
-      supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("referral_earnings")
-        .select("*")
-        .eq("referrer_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("withdrawal_requests")
-        .select("*")
+        .select("code")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase.from("reward_tasks").select("*").eq("active", true).order("sort_order"),
-      supabase
-        .from("user_reward_tasks")
-        .select("task_id, progress, completed_at, awarded_credits")
-        .eq("user_id", user.id),
-    ]);
-    setRefs(r.data ?? []);
-    setEarns(e.data ?? []);
-    setWds(w.data ?? []);
-    setTasks((tk.data as RewardTask[]) ?? []);
-    setUserTasks((ut.data as UserTask[]) ?? []);
+        .limit(1);
+      let row = codes?.[0] as { code: string } | undefined;
+      if (!row) {
+        const newCode = `MEGSY-${user.id.substring(0, 6).toUpperCase()}`;
+        await supabase
+          .from("referral_codes")
+          .insert({ user_id: user.id, code: newCode, referral_mode: "cash" });
+        row = { code: newCode };
+      }
+      setCode(row.code);
 
+      const [r, e, w, tk, ut] = await Promise.all([
+        supabase
+          .from("referrals")
+          .select("*")
+          .eq("referrer_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("referral_earnings")
+          .select("*")
+          .eq("referrer_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("withdrawal_requests")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        supabase.from("reward_tasks").select("*").eq("active", true).order("sort_order"),
+        supabase
+          .from("user_reward_tasks")
+          .select("task_id, progress, completed_at, awarded_credits")
+          .eq("user_id", user.id),
+      ]);
+      setRefs(r.data ?? []);
+      setEarns(e.data ?? []);
+      setWds(w.data ?? []);
+      setTasks((tk.data as RewardTask[]) ?? []);
+      setUserTasks((ut.data as UserTask[]) ?? []);
+    } catch {
+      // A failed lookup must never blank the page — the invite UI still works.
+    }
   }, []);
+
 
   useEffect(() => {
     loadData();
