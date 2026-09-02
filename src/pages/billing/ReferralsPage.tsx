@@ -11,7 +11,7 @@ import {
 } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { QrCode, X, Download, Share2, Check, Copy } from "lucide-react";
+import { X, Download, Copy } from "lucide-react";
 
 const QRCodeSVG = lazy(() => import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })));
 
