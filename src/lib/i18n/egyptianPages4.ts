@@ -119,7 +119,10 @@ export const EGYPTIAN_PAGES_4: Record<string, string> = {
   "Couldn't load your Pro progress. Refresh the page to try again.":
     "مقدرناش نحمّل تقدّم برو. اعمل تحديث للصفحة وجرّب تاني.",
   "Copy invite link": "انسخ لينك الدعوة",
+  "Invite friends": "اعزم أصحابك",
   "Invite link copied": "لينك الدعوة اتنسخ",
+  "Invite message copied": "رسالة الدعوة اتنسخت",
+  "friends joined": "أصحاب سجّلوا",
   "Get Pro": "خد برو",
   "Scan to join Pro": "امسح الكود وانضم لبرو",
 };

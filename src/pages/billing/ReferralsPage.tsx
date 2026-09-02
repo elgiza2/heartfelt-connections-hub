@@ -425,8 +425,8 @@ const ReferralsPage = () => {
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 14px)" }}
     >
-      <div className="h-14 bg-gradient-to-t from-background to-transparent" />
-      <div className="pointer-events-auto mx-auto w-full max-w-[620px] bg-background px-5 pt-1">
+      <div className="h-5 bg-background" />
+      <div className="pointer-events-auto mx-auto w-full max-w-[620px] border-t border-border bg-background px-5 pt-3">
         <div className="flex flex-col gap-2">
           <button
             type="button"
