@@ -52,7 +52,6 @@ function useIsDesktop() {
 export const WHATSAPP_PHONE = "201098821812";
 export const PROMOTER_MESSAGE =
   "Hello, I want to join the Megsy AI promotion / referral system. Please send me the details.";
-export const CREDITS_PER_SIGNUP = 15;
 export const MIN_PAYOUT = 10;
 
 /* Neutral, quiet palette — no gradients, no neon. */
@@ -356,12 +355,12 @@ const ReferralsPage = () => {
     await safeCopyText(link);
     setJustCopied(true);
     setTimeout(() => setJustCopied(false), 1600);
-    toast.success("Link copied");
+    toast.success(translateExactText("Invite link copied", lang));
   };
 
   const shareLink = async () => {
     if (!link) return;
-    const shareText = `Try Megsy AI and get ${CREDITS_PER_SIGNUP} free credits with my invite link:\n${link}`;
+    const shareText = `Join Megsy AI with my invite link:\n${link}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "Megsy AI", text: shareText, url: link });
@@ -371,26 +370,12 @@ const ReferralsPage = () => {
       }
     }
     await safeCopyText(shareText);
-    toast.success("Invite message copied");
+    toast.success(translateExactText("Invite message copied", lang));
   };
 
   const openPromoter = () => {
     const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(PROMOTER_MESSAGE)}`;
     window.open(url, "_blank", "noopener,noreferrer");
-  };
-
-  const downloadQR = () => {
-    if (!qrRef.current) return;
-    const source = new XMLSerializer().serializeToString(qrRef.current);
-    const blob = new Blob([source], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `megsy-referral-qr-${code}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const ctx: ReferralsContextValue = {
@@ -412,7 +397,7 @@ const ReferralsPage = () => {
     copyLink,
     shareLink,
     openPromoter,
-    openQr: () => setQrOpen(true),
+    openQr: () => {},
     reload: loadData,
   };
 
@@ -445,18 +430,18 @@ const ReferralsPage = () => {
         <div className="flex flex-col gap-2">
           <button
             type="button"
-            onClick={copyLink}
+            onClick={shareLink}
             disabled={!link}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] bg-foreground px-5 text-[15px] font-semibold text-background transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {justCopied ? "Invite link copied" : "Copy invite link"}
+            {translateExactText("Invite friends", lang)}
           </button>
           <button
             type="button"
             onClick={() => navigate("/settings/billing")}
             className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] border border-border bg-background px-5 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99]"
           >
-            Get Pro
+            {translateExactText("Get Pro", lang)}
           </button>
         </div>
       </div>
@@ -496,24 +481,7 @@ const ReferralsPage = () => {
         </MobilePushShell>
       )}
 
-      {qrOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-5 backdrop-blur-md" onClick={() => setQrOpen(false)}>
-          <div className="relative w-full max-w-sm rounded-[24px] border border-border bg-background p-6 text-foreground shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground">
-              <X className="h-4 w-4" />
-            </button>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Megsy invitation</p>
-            <h2 className="mt-2 text-[20px] font-semibold">Scan to join Pro</h2>
-            <div className="mx-auto mt-5 grid w-max place-items-center rounded-[22px] bg-white p-5 shadow-lg">
-              {link ? <Suspense fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-foreground/10" />}><QRCodeSVG ref={qrRef} value={link} size={200} bgColor="#FFFFFF" fgColor="#0a0a0a" level="M" /></Suspense> : <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-foreground/10" />}
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <GhostButton onClick={copyLink}><Copy className="h-4 w-4" /> Copy</GhostButton>
-              <GhostButton onClick={downloadQR}><Download className="h-4 w-4" /> Download</GhostButton>
-            </div>
-          </div>
-        </div>
-      )}
+
     </ReferralsCtx.Provider>
   );
 };
