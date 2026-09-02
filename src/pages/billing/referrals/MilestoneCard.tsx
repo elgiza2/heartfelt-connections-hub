@@ -63,9 +63,13 @@ export default function MilestoneCard() {
   const expires = state.expires_at ? new Date(state.expires_at) : null;
 
   return (
-    <section className="relative overflow-hidden rounded-[24px] border border-primary/25 bg-gradient-to-br from-primary/[0.10] to-transparent p-5">
-      <div className="flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+    <section className="relative overflow-hidden rounded-[26px] border border-primary/25 bg-gradient-to-br from-primary/[0.14] via-primary/[0.05] to-transparent p-5 shadow-[0_24px_60px_-34px_hsl(var(--primary)/0.8)]">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-primary/20 blur-3xl"
+      />
+      <div className="relative flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/20 text-primary ring-1 ring-primary/30">
           {state.granted ? <Sparkles className="h-5 w-5" /> : <Gift className="h-5 w-5" />}
         </span>
         <div className="min-w-0 flex-1">
@@ -84,17 +88,19 @@ export default function MilestoneCard() {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-1.5" aria-hidden>
+      <div className="relative mt-4 flex items-center gap-1.5" aria-hidden>
         {Array.from({ length: target }).map((_, i) => (
           <span
             key={i}
             className={`h-1.5 flex-1 rounded-full transition-colors ${
-              i < done ? "bg-primary" : "bg-foreground/[0.10]"
+              i < done
+                ? "bg-primary shadow-[0_0_12px_-2px_hsl(var(--primary))]"
+                : "bg-foreground/[0.10]"
             }`}
           />
         ))}
       </div>
-      <p className="mt-2 text-[12px] text-foreground/50">
+      <p className="relative mt-2 text-[12px] text-foreground/50">
         {done} / {target} friends joined ({pct}%)
       </p>
     </section>
