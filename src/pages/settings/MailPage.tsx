@@ -29,7 +29,8 @@ import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isPinned, setPinned } from "@/lib/sidebarPins";
 import DesktopSettingsLayout from "@/components/settings/DesktopSettingsLayout";
-import ProfileGlassShell from "@/components/profile/ProfileGlassShell";
+import MobilePushShell from "@/components/layout/MobilePushShell";
+import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { translateExactText, useUserLang } from "@/lib/authI18n";
@@ -212,6 +213,8 @@ export default function MailPage() {
   const [open, setOpen] = useState<MailMessage | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [query, setQuery] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [, , toggleSidebar] = useSidebarCollapsed();
   const [searching, setSearching] = useState(false);
   const [copied, setCopied] = useState(false);
   const [pinned, setPinnedState] = useState(() => isPinned("mail"));
