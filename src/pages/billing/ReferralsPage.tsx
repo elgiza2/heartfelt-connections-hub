@@ -423,68 +423,51 @@ const ReferralsPage = () => {
   };
 
   const content = (
-    <div className={`mx-auto flex min-h-full w-full max-w-[640px] flex-col px-5 min-h-[100dvh] ${onRewards ? "pb-10" : "pb-[120px]"} pt-4 md:pt-6`}>
+    <div className={`referral-canvas mx-auto flex min-h-full w-full max-w-[980px] flex-col px-4 sm:px-6 ${onRewards ? "pb-10" : "pb-[132px]"} pt-3 md:px-10 md:pt-7`}>
       {onRewards || isDesktop ? null : (
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu"
-          className="mb-2 flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent text-foreground transition active:scale-95"
+          className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.45)] text-[hsl(var(--referral-ink))] shadow-sm backdrop-blur transition active:scale-95"
         >
           <SidebarToggleIcon />
         </button>
       )}
-      <div className="flex flex-1 flex-col justify-center">
+      <div className="flex flex-1 flex-col">
         <Outlet />
       </div>
     </div>
   );
 
-
-  /** Sticky action bar — copy the invite link, open the redemption page. */
+  /** Sticky action bar — the primary invite action remains available while reading. */
   const actionBar = (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 14px)" }}
     >
-      <div className="h-16 bg-gradient-to-t from-background to-transparent" />
-      <div className="pointer-events-auto mx-auto w-full max-w-[640px] px-5">
-        <div className="flex items-center gap-2 rounded-[26px] border border-foreground/[0.10] bg-background/70 p-2 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
+      <div className="h-20 bg-gradient-to-t from-[hsl(var(--referral-sky))] via-[hsl(var(--referral-sky)/0.78)] to-transparent" />
+      <div className="pointer-events-auto mx-auto w-full max-w-[980px] px-4 sm:px-6 md:px-10">
+        <div className="flex items-center gap-2 rounded-[24px] border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.82)] p-2 shadow-[0_20px_50px_-25px_hsl(var(--referral-ink)/0.45)] backdrop-blur-xl">
           <button
             type="button"
             onClick={copyLink}
             disabled={!link}
-            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-foreground px-5 text-[14.5px] font-semibold tracking-tight text-background transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[18px] bg-[hsl(var(--referral-ink))] px-5 text-[14px] font-semibold tracking-tight text-[hsl(var(--background))] transition-transform duration-200 hover:bg-[hsl(var(--referral-ink)/0.9)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-background/25 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]"
-            />
+            <span aria-hidden className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-[hsl(var(--background)/0.2)] to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
             {justCopied ? <Check className="h-[18px] w-[18px]" /> : <Copy className="h-[18px] w-[18px]" />}
             {justCopied ? "Copied" : "Copy invite link"}
           </button>
-          <button
-            type="button"
-            onClick={shareLink}
-            disabled={!link}
-            aria-label="Share invite link"
-            className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-foreground/[0.12] bg-foreground/[0.04] text-foreground transition hover:bg-foreground/[0.09] active:scale-[0.96] disabled:opacity-40"
-          >
+          <button type="button" onClick={shareLink} disabled={!link} aria-label="Share invite link" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-sky)/0.7)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-sky))] active:scale-[0.96] disabled:opacity-40">
             <Share2 className="h-[18px] w-[18px]" />
           </button>
-          <button
-            type="button"
-            onClick={() => setQrOpen(true)}
-            disabled={!link}
-            aria-label="Show QR code"
-            className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-foreground/[0.12] bg-foreground/[0.04] text-foreground transition hover:bg-foreground/[0.09] active:scale-[0.96] disabled:opacity-40"
-          >
+          <button type="button" onClick={() => setQrOpen(true)} disabled={!link} aria-label="Show QR code" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-lilac)/0.35)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-lilac)/0.5)] active:scale-[0.96] disabled:opacity-40">
             <QrCode className="h-[18px] w-[18px]" />
           </button>
         </div>
       </div>
     </div>
-
   );
 
 
@@ -494,19 +477,14 @@ const ReferralsPage = () => {
   return (
     <ReferralsCtx.Provider value={ctx}>
       {isDesktop ? (
-        <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
           <aside
             style={{ width: sidebarWidth, minWidth: sidebarWidth, flexBasis: sidebarWidth }}
             className="relative z-40 hidden shrink-0 overflow-hidden transition-[width,min-width,flex-basis] duration-300 md:flex"
           >
-            <AppSidebar
-              open
-              inline
-              onClose={() => {}}
-              onNewChat={() => navigate("/")}
-            />
+            <AppSidebar open inline onClose={() => {}} onNewChat={() => navigate("/")} />
           </aside>
-          <main className="relative min-w-0 flex-1 overflow-y-auto">
+          <main className="relative min-w-0 flex-1 overflow-y-auto bg-[hsl(var(--referral-sky))]">
             {content}
             {onRewards ? null : actionBar}
           </main>
@@ -518,7 +496,7 @@ const ReferralsPage = () => {
           onNewChat={() => navigate("/")}
           currentMode="chat"
         >
-          <div className="min-h-[100dvh] bg-background text-foreground">
+          <div className="min-h-[100dvh] bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
             {content}
             {onRewards ? null : actionBar}
           </div>
@@ -526,50 +504,19 @@ const ReferralsPage = () => {
       )}
 
       {qrOpen && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center px-5"
-          style={{ background: "hsl(0 0% 0% / 0.7)", backdropFilter: "blur(6px)" }}
-          onClick={() => setQrOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-sm rounded-2xl border border-foreground/10 bg-background p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setQrOpen(false)}
-              aria-label="Close"
-              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-foreground/10 text-foreground/70"
-            >
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[hsl(var(--referral-ink)/0.72)] px-5 backdrop-blur-md" onClick={() => setQrOpen(false)}>
+          <div className="relative w-full max-w-sm rounded-[28px] border border-[hsl(var(--background)/0.5)] bg-[hsl(var(--referral-sky))] p-6 text-[hsl(var(--referral-ink))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.5)] text-[hsl(var(--referral-ink)/0.7)]">
               <X className="h-4 w-4" />
             </button>
-            <h2 className="text-center text-[18px] font-semibold">Your QR code</h2>
-            <div className="mx-auto mt-5 grid w-max place-items-center rounded-2xl bg-white p-5">
-              {link ? (
-                <Suspense
-                  fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-black/10" />}
-                >
-                  <QRCodeSVG
-                    ref={qrRef}
-                    value={link}
-                    size={200}
-                    bgColor="#FFFFFF"
-                    fgColor="#0a0a0a"
-                    level="M"
-                  />
-                </Suspense>
-              ) : (
-                <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-black/10" />
-              )}
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.5)]">Megsy invitation</p>
+            <h2 className="mt-2 font-serif text-[28px] leading-none">Scan to join Pro.</h2>
+            <div className="mx-auto mt-5 grid w-max place-items-center rounded-[22px] bg-[hsl(var(--background))] p-5 shadow-lg">
+              {link ? <Suspense fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}><QRCodeSVG ref={qrRef} value={link} size={200} bgColor="#FFFFFF" fgColor="#0a0a0a" level="M" /></Suspense> : <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}
             </div>
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <GhostButton onClick={copyLink}>
-                <Copy className="h-4 w-4" />
-                Copy
-              </GhostButton>
-              <GhostButton onClick={downloadQR}>
-                <Download className="h-4 w-4" />
-                Download
-              </GhostButton>
+              <GhostButton onClick={copyLink}><Copy className="h-4 w-4" /> Copy</GhostButton>
+              <GhostButton onClick={downloadQR}><Download className="h-4 w-4" /> Download</GhostButton>
             </div>
           </div>
         </div>

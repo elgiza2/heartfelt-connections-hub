@@ -1,13 +1,12 @@
-/** @doc Referrals overview — invite 5 friends, get Pro free. No points system. */
-import { Crown, Check } from "lucide-react";
+/** @doc Referral overview — a clean editorial invite page built around the sky artwork. */
 import MilestoneCard from "./MilestoneCard";
 import { useReferrals } from "../ReferralsPage";
 import heroImage from "@/assets/megsy-referral-hero.jpg";
 
 const steps = [
-  "Share your invite link with friends",
-  "5 friends sign up with your link",
-  "Megsy Pro unlocks free, automatically",
+  { number: "01", title: "Share your link", copy: "Send your personal Megsy invite to friends." },
+  { number: "02", title: "Five friends join", copy: "They create an account through your invitation." },
+  { number: "03", title: "Pro is yours", copy: "Your limited-time Pro access starts automatically." },
 ];
 
 export default function DashboardTab() {
@@ -16,98 +15,58 @@ export default function DashboardTab() {
 
   return (
     <div className="flex h-full flex-col" data-stagger>
-      {/* Poster card — the invite artwork, framed like a collectible pass. */}
-      <section className="relative overflow-hidden rounded-[28px] bg-[#0B0B0F] shadow-[0_40px_90px_-50px_rgba(0,0,0,0.8)] ring-1 ring-white/[0.08]">
-        <span
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[42%] h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C9A24C]/15 blur-[90px]"
-        />
-
-        <div className="relative flex items-center justify-between px-5 pt-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
-            <Crown className="h-3 w-3 text-[#F6E7B7]" />
-            Limited time
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
-            Megsy Pro
-          </span>
-        </div>
-
-        <img
-          src={heroImage}
-          alt=""
-          aria-hidden
-          width={1280}
-          height={960}
-          className="relative mx-auto block w-full max-w-[440px] select-none"
-          style={{
-            maskImage:
-              "radial-gradient(120% 92% at 50% 46%, black 52%, transparent 82%)",
-            WebkitMaskImage:
-              "radial-gradient(120% 92% at 50% 46%, black 52%, transparent 82%)",
-          }}
-        />
-
-        <div className="relative -mt-6 px-5 pb-6">
-          <h1
-            style={{ color: "#ffffff" }}
-            className="text-center text-[32px] font-bold leading-[1.05] tracking-[-0.035em] sm:text-[40px]"
-          >
-            Invite friends
-            <br />
-            <span className="bg-gradient-to-r from-[#F6E7B7] via-[#C9A24C] to-[#F6E7B7] bg-clip-text text-transparent">
-              get Pro free
-            </span>
+      <header className="grid gap-5 border-b border-[hsl(var(--referral-ink)/0.14)] pb-6 md:grid-cols-[1fr_auto] md:items-end">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[hsl(var(--referral-ink)/0.52)]">Megsy Pro invitation</p>
+          <h1 className="mt-3 max-w-[620px] font-serif text-[clamp(42px,7vw,76px)] font-normal leading-[0.9] tracking-[-0.045em] text-[hsl(var(--referral-ink))]">
+            Invite friends.<br />
+            <em className="font-normal text-[hsl(var(--referral-ink)/0.58)]">Keep creating.</em>
           </h1>
+        </div>
+        <p className="max-w-[230px] text-[14px] leading-relaxed text-[hsl(var(--referral-ink)/0.62)] md:pb-1">
+          Bring five people to Megsy AI and enjoy Pro on us for a limited time.
+        </p>
+      </header>
 
-          <ul className="mx-auto mt-5 max-w-[360px] space-y-2.5">
-            {steps.map((s, i) => (
-              <li key={s} className="flex items-start gap-3">
-                <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#C9A24C]/40 bg-[#C9A24C]/10 font-mono text-[10px] text-[#F6E7B7]">
-                  {i + 1}
-                </span>
-                <span className="text-[13.5px] leading-snug text-white/70">{s}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/45">
-                Friends joined
-              </p>
-              <p className="mt-1 text-[26px] font-bold leading-none tracking-tight text-white">
-                {signups}
-                <span className="text-[13px] font-medium text-white/35"> / 5</span>
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/45">
-                Left for Pro
-              </p>
-              <p className="mt-1 text-[26px] font-bold leading-none tracking-tight text-white">
-                {remaining}
-              </p>
-            </div>
-          </div>
+      <section className="relative mt-5 overflow-hidden rounded-[26px] bg-[hsl(var(--referral-sky-deep))] shadow-[0_28px_70px_-42px_hsl(var(--referral-ink)/0.7)] ring-1 ring-[hsl(var(--referral-ink)/0.12)]">
+        <img src={heroImage} alt="Megsy Pro invitation artwork" width={1280} height={960} className="block aspect-[4/3] w-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-[hsl(var(--referral-ink)/0.72)] to-transparent px-5 pb-5 pt-20 text-[hsl(var(--background))] sm:px-7 sm:pb-7">
+          <p className="max-w-[360px] text-[18px] font-medium leading-tight sm:text-[22px]">A little extra room for the work that matters.</p>
+          <span className="shrink-0 text-[11px] uppercase tracking-[0.2em] text-[hsl(var(--background)/0.75)]">01 / 03</span>
         </div>
       </section>
 
-      <div className="mt-4 space-y-3">
-        <MilestoneCard />
+      <section className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-[20px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-ink)/0.14)]">
+        <div className="bg-[hsl(var(--referral-sky)/0.9)] px-5 py-4 sm:px-7">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.52)]">Friends joined</p>
+          <p className="mt-2 font-serif text-[40px] leading-none text-[hsl(var(--referral-ink))]">{signups}<span className="ml-1 text-[18px] text-[hsl(var(--referral-ink)/0.42)]">/ 5</span></p>
+        </div>
+        <div className="bg-[hsl(var(--referral-lilac)/0.34)] px-5 py-4 sm:px-7">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.52)]">Until Pro</p>
+          <p className="mt-2 font-serif text-[40px] leading-none text-[hsl(var(--referral-ink))]">{remaining}</p>
+        </div>
+      </section>
 
-        <ul className="space-y-2 rounded-[22px] border border-foreground/[0.07] bg-foreground/[0.02] px-4 py-3.5">
-          {[
-            "No credit card required, no auto renewal",
-            "Your friends get a welcome bonus too",
-            "Pro activates the moment the 5th friend joins",
-          ].map((t) => (
-            <li key={t} className="flex items-start gap-2.5">
-              <Check className="mt-[2px] h-3.5 w-3.5 shrink-0 text-[#C9A24C]" />
-              <span className="text-[12.5px] leading-relaxed text-foreground/60">{t}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="mt-5 space-y-4">
+        <MilestoneCard />
+        <section className="border-t border-[hsl(var(--referral-ink)/0.14)] pt-5">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="font-serif text-[30px] leading-none text-[hsl(var(--referral-ink))]">How it works</h2>
+            <span className="text-[11px] uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.45)]">Simple by design</span>
+          </div>
+          <ol className="mt-5 grid gap-0 border-y border-[hsl(var(--referral-ink)/0.14)] sm:grid-cols-3">
+            {steps.map((step) => (
+              <li key={step.number} className="border-b border-[hsl(var(--referral-ink)/0.14)] py-4 last:border-0 sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0 sm:last:pr-0">
+                <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--referral-sky-deep))]">{step.number}</span>
+                <p className="mt-4 text-[15px] font-semibold text-[hsl(var(--referral-ink))]">{step.title}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-[hsl(var(--referral-ink)/0.58)]">{step.copy}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <p className="max-w-[620px] pb-2 text-[12.5px] leading-relaxed text-[hsl(var(--referral-ink)/0.52)]">
+          No card required. No auto-renewal. Friends receive a welcome bonus, and your Pro access begins when the fifth friend joins.
+        </p>
       </div>
     </div>
   );
