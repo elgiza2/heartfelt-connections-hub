@@ -6,6 +6,8 @@ import { useState, useRef, useEffect, useCallback, Suspense, lazy, type FormEven
 import { createPortal } from "react-dom";
 import { animate, m as motion, useMotionValue, useTransform } from "framer-motion";
 import { toast } from "sonner";
+import { getActiveComputerRun } from "@/lib/computer/activeRun";
+
 import { useNavigate, useLocation, type NavigateOptions, type To } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MAX_CHAT_MESSAGE_CHARS } from "@/lib/validation/schemas";
