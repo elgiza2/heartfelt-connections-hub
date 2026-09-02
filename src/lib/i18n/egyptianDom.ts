@@ -257,7 +257,7 @@ export const stopEgyptianDom = () => {
   queued = [];
   // Restore text and attributes translated by the DOM fallback before English
   // renders again. Without this, switching Arabic → English leaves stale Arabic.
-  originalText.forEach?.(() => {});
+  if (typeof document === "undefined") return;
   // WeakMaps cannot be iterated, so restore tracked nodes while they are still
   // reachable from the document, then let the maps be garbage-collected.
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
