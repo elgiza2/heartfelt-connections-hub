@@ -63,15 +63,16 @@ export default function MilestoneCard() {
   const expires = state.expires_at ? new Date(state.expires_at) : null;
 
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-[#C9A24C]/30 bg-gradient-to-br from-[#C9A24C]/[0.14] via-[#C9A24C]/[0.05] to-transparent p-5 shadow-[0_24px_60px_-34px_rgba(201,162,76,0.55)]">
+    <section className="relative overflow-hidden rounded-[26px] border border-[#3FA9F5]/25 bg-gradient-to-br from-[#3FA9F5]/[0.14] via-[#3FA9F5]/[0.05] to-transparent p-5 shadow-[0_24px_60px_-34px_rgba(63,169,245,0.55)]">
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#C9A24C]/20 blur-3xl"
+        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#3FA9F5]/20 blur-3xl"
       />
       <div className="relative flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#C9A24C]/15 text-[#C9A24C] ring-1 ring-[#C9A24C]/35">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#3FA9F5]/15 text-[#2E90D6] ring-1 ring-[#3FA9F5]/35">
           {state.granted ? <Sparkles className="h-5 w-5" /> : <Gift className="h-5 w-5" />}
         </span>
+
         <div className="min-w-0 flex-1">
           <p className="text-[15px] font-semibold tracking-tight text-foreground">
             {state.granted ? "Pro unlocked — on us" : `Invite ${target} friends, get Pro free`}

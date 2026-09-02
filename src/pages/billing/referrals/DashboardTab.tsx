@@ -1,13 +1,13 @@
-/** @doc Referrals overview — invite 5 friends, get Pro free. No points system. */
-import { Crown, Check } from "lucide-react";
+/** @doc Referrals overview — sky-poster invite: invite 5 friends, get Pro free. */
+import { Check } from "lucide-react";
 import MilestoneCard from "./MilestoneCard";
 import { useReferrals } from "../ReferralsPage";
 import heroImage from "@/assets/megsy-referral-hero.jpg";
 
 const steps = [
-  "Share your invite link with friends",
-  "5 friends sign up with your link",
-  "Megsy Pro unlocks free, automatically",
+  { t: "Share your link", d: "Send your personal invite link to friends." },
+  { t: "5 friends join", d: "They sign up with Megsy AI using your link." },
+  { t: "Pro unlocks free", d: "Your Pro plan activates automatically." },
 ];
 
 export default function DashboardTab() {
@@ -16,21 +16,38 @@ export default function DashboardTab() {
 
   return (
     <div className="flex h-full flex-col" data-stagger>
-      {/* Poster card — the invite artwork, framed like a collectible pass. */}
-      <section className="relative overflow-hidden rounded-[28px] bg-[#0B0B0F] shadow-[0_40px_90px_-50px_rgba(0,0,0,0.8)] ring-1 ring-white/[0.08]">
+      {/* Sky poster — artwork and headline live in one continuous surface. */}
+      <section className="relative overflow-hidden rounded-[30px] shadow-[0_40px_90px_-50px_rgba(14,110,190,0.65)] ring-1 ring-[#7cc4f5]/40">
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, #4FB3F0 0%, #63C0F5 38%, #9BD7F8 68%, #E9F6FE 100%)",
+          }}
+        />
         <span
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[42%] h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#C9A24C]/15 blur-[90px]"
+          className="pointer-events-none absolute -right-10 top-6 h-40 w-40 rounded-full bg-white/35 blur-[60px]"
         />
 
-        <div className="relative flex items-center justify-between px-5 pt-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
-            <Crown className="h-3 w-3 text-[#F6E7B7]" />
+        <div className="relative px-6 pt-6">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/50 bg-white/25 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white backdrop-blur-md">
             Limited time
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/35">
-            Megsy Pro
-          </span>
+
+          <h1
+            style={{ color: "#ffffff" }}
+            className="mt-4 text-[34px] font-light leading-[1.05] tracking-[-0.03em] drop-shadow-[0_2px_18px_rgba(10,80,140,0.35)] sm:text-[42px]"
+          >
+            Invite 5 friends
+            <br />
+            <span className="font-semibold">Pro is on us</span>
+          </h1>
+          <p className="mt-3 max-w-[330px] text-[14px] leading-relaxed text-white/85">
+            Every friend who joins Megsy AI with your link brings you closer to a
+            free Pro plan.
+          </p>
         </div>
 
         <img
@@ -39,53 +56,31 @@ export default function DashboardTab() {
           aria-hidden
           width={1280}
           height={960}
-          className="relative mx-auto block w-full max-w-[440px] select-none"
+          className="relative -mt-2 block w-full select-none"
           style={{
             maskImage:
-              "radial-gradient(120% 92% at 50% 46%, black 52%, transparent 82%)",
+              "linear-gradient(180deg, transparent 0%, black 16%, black 78%, transparent 99%)",
             WebkitMaskImage:
-              "radial-gradient(120% 92% at 50% 46%, black 52%, transparent 82%)",
+              "linear-gradient(180deg, transparent 0%, black 16%, black 78%, transparent 99%)",
           }}
         />
 
-        <div className="relative -mt-6 px-5 pb-6">
-          <h1
-            style={{ color: "#ffffff" }}
-            className="text-center text-[32px] font-bold leading-[1.05] tracking-[-0.035em] sm:text-[40px]"
-          >
-            Invite friends
-            <br />
-            <span className="bg-gradient-to-r from-[#F6E7B7] via-[#C9A24C] to-[#F6E7B7] bg-clip-text text-transparent">
-              get Pro free
-            </span>
-          </h1>
-
-          <ul className="mx-auto mt-5 max-w-[360px] space-y-2.5">
-            {steps.map((s, i) => (
-              <li key={s} className="flex items-start gap-3">
-                <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#C9A24C]/40 bg-[#C9A24C]/10 font-mono text-[10px] text-[#F6E7B7]">
-                  {i + 1}
-                </span>
-                <span className="text-[13.5px] leading-snug text-white/70">{s}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/45">
+        <div className="relative -mt-10 px-5 pb-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-center backdrop-blur-md">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0d4f7a]/60">
                 Friends joined
               </p>
-              <p className="mt-1 text-[26px] font-bold leading-none tracking-tight text-white">
+              <p className="mt-1 text-[26px] font-semibold leading-none tracking-tight text-[#0B3C5D]">
                 {signups}
-                <span className="text-[13px] font-medium text-white/35"> / 5</span>
+                <span className="text-[13px] font-medium text-[#0B3C5D]/40"> / 5</span>
               </p>
             </div>
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-center">
-              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-white/45">
+            <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-center backdrop-blur-md">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#0d4f7a]/60">
                 Left for Pro
               </p>
-              <p className="mt-1 text-[26px] font-bold leading-none tracking-tight text-white">
+              <p className="mt-1 text-[26px] font-semibold leading-none tracking-tight text-[#0B3C5D]">
                 {remaining}
               </p>
             </div>
@@ -96,6 +91,30 @@ export default function DashboardTab() {
       <div className="mt-4 space-y-3">
         <MilestoneCard />
 
+        {/* How it works — numbered, editorial rhythm. */}
+        <section className="rounded-[24px] border border-foreground/[0.07] bg-foreground/[0.02] px-5 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/40">
+            How it works
+          </p>
+          <ol className="mt-3 space-y-3.5">
+            {steps.map((s, i) => (
+              <li key={s.t} className="flex items-start gap-3">
+                <span className="mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3FA9F5] text-[11px] font-semibold text-white">
+                  {i + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[14px] font-medium leading-snug text-foreground">
+                    {s.t}
+                  </span>
+                  <span className="mt-0.5 block text-[12.5px] leading-relaxed text-foreground/55">
+                    {s.d}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         <ul className="space-y-2 rounded-[22px] border border-foreground/[0.07] bg-foreground/[0.02] px-4 py-3.5">
           {[
             "No credit card required, no auto renewal",
@@ -103,7 +122,7 @@ export default function DashboardTab() {
             "Pro activates the moment the 5th friend joins",
           ].map((t) => (
             <li key={t} className="flex items-start gap-2.5">
-              <Check className="mt-[2px] h-3.5 w-3.5 shrink-0 text-[#C9A24C]" />
+              <Check className="mt-[2px] h-3.5 w-3.5 shrink-0 text-[#3FA9F5]" />
               <span className="text-[12.5px] leading-relaxed text-foreground/60">{t}</span>
             </li>
           ))}
