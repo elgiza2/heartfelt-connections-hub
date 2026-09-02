@@ -445,38 +445,46 @@ const ReferralsPage = () => {
   const actionBar = (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
-      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}
+      style={{ paddingBottom: "max(env(safe-area-inset-bottom), 14px)" }}
     >
+      <div className="h-16 bg-gradient-to-t from-background to-transparent" />
       <div className="pointer-events-auto mx-auto w-full max-w-[640px] px-5">
-        <div className="flex gap-2 rounded-[24px] border border-foreground/10 bg-background/85 p-2 shadow-[0_18px_40px_-22px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+        <div className="flex items-center gap-2 rounded-[26px] border border-foreground/[0.10] bg-background/70 p-2 shadow-[0_28px_60px_-28px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
           <button
             type="button"
             onClick={copyLink}
             disabled={!link}
-            className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[18px] bg-foreground px-5 text-[14px] font-semibold text-background transition active:scale-[0.99] disabled:opacity-40"
+            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-foreground px-5 text-[14.5px] font-semibold tracking-tight text-background transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {justCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-background/25 to-transparent transition-transform duration-700 group-hover:translate-x-[120%]"
+            />
+            {justCopied ? <Check className="h-[18px] w-[18px]" /> : <Copy className="h-[18px] w-[18px]" />}
             {justCopied ? "Copied" : "Copy invite link"}
           </button>
-          <GhostButton
+          <button
+            type="button"
             onClick={shareLink}
             disabled={!link}
-            className="h-12 w-12 rounded-[18px] !px-0"
             aria-label="Share invite link"
+            className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-foreground/[0.12] bg-foreground/[0.04] text-foreground transition hover:bg-foreground/[0.09] active:scale-[0.96] disabled:opacity-40"
           >
-            <Share2 className="h-4 w-4" />
-          </GhostButton>
-          <GhostButton
+            <Share2 className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
             onClick={() => setQrOpen(true)}
             disabled={!link}
-            className="h-12 w-12 rounded-[18px] !px-0"
             aria-label="Show QR code"
+            className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[20px] border border-foreground/[0.12] bg-foreground/[0.04] text-foreground transition hover:bg-foreground/[0.09] active:scale-[0.96] disabled:opacity-40"
           >
-            <QrCode className="h-4 w-4" />
-          </GhostButton>
+            <QrCode className="h-[18px] w-[18px]" />
+          </button>
         </div>
       </div>
     </div>
+
   );
 
 
