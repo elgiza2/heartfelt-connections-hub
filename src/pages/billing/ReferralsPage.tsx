@@ -423,13 +423,13 @@ const ReferralsPage = () => {
   };
 
   const content = (
-    <div className={`referral-canvas mx-auto flex min-h-full w-full max-w-[980px] flex-col px-4 sm:px-6 ${onRewards ? "pb-10" : "pb-[132px]"} pt-3 md:px-10 md:pt-7`}>
+    <div className={`mx-auto flex min-h-full w-full max-w-[620px] flex-col px-5 ${onRewards ? "pb-10" : "pb-[150px]"} pt-3 md:pt-7`}>
       {onRewards || isDesktop ? null : (
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open menu"
-          className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.45)] text-[hsl(var(--referral-ink))] shadow-sm backdrop-blur transition active:scale-95"
+          className="mb-2 flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent text-foreground transition active:scale-95"
         >
           <SidebarToggleIcon />
         </button>
@@ -440,30 +440,29 @@ const ReferralsPage = () => {
     </div>
   );
 
-  /** Sticky action bar — the primary invite action remains available while reading. */
+  /** Pinned actions — copy the invite link, or go straight to Pro. */
   const actionBar = (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 14px)" }}
     >
-      <div className="h-20 bg-gradient-to-t from-[hsl(var(--referral-sky))] via-[hsl(var(--referral-sky)/0.78)] to-transparent" />
-      <div className="pointer-events-auto mx-auto w-full max-w-[980px] px-4 sm:px-6 md:px-10">
-        <div className="flex items-center gap-2 rounded-[24px] border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.82)] p-2 shadow-[0_20px_50px_-25px_hsl(var(--referral-ink)/0.45)] backdrop-blur-xl">
+      <div className="h-14 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-auto mx-auto w-full max-w-[620px] bg-background px-5 pt-1">
+        <div className="flex flex-col gap-2">
           <button
             type="button"
             onClick={copyLink}
             disabled={!link}
-            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[18px] bg-[hsl(var(--referral-ink))] px-5 text-[14px] font-semibold tracking-tight text-[hsl(var(--background))] transition-transform duration-200 hover:bg-[hsl(var(--referral-ink)/0.9)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] bg-foreground px-5 text-[15px] font-semibold text-background transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <span aria-hidden className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-[hsl(var(--background)/0.2)] to-transparent transition-transform duration-700 group-hover:translate-x-[120%]" />
-            {justCopied ? <Check className="h-[18px] w-[18px]" /> : <Copy className="h-[18px] w-[18px]" />}
-            {justCopied ? "Copied" : "Copy invite link"}
+            {justCopied ? "Invite link copied" : "Copy invite link"}
           </button>
-          <button type="button" onClick={shareLink} disabled={!link} aria-label="Share invite link" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-sky)/0.7)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-sky))] active:scale-[0.96] disabled:opacity-40">
-            <Share2 className="h-[18px] w-[18px]" />
-          </button>
-          <button type="button" onClick={() => setQrOpen(true)} disabled={!link} aria-label="Show QR code" className="inline-flex h-[52px] w-[52px] items-center justify-center rounded-[18px] border border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-lilac)/0.35)] text-[hsl(var(--referral-ink))] transition hover:bg-[hsl(var(--referral-lilac)/0.5)] active:scale-[0.96] disabled:opacity-40">
-            <QrCode className="h-[18px] w-[18px]" />
+          <button
+            type="button"
+            onClick={() => navigate("/settings/billing")}
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] border border-border bg-background px-5 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99]"
+          >
+            Get Pro
           </button>
         </div>
       </div>
