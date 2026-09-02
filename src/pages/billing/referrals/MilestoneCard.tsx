@@ -1,12 +1,5 @@
-/**
- * @doc "5 friends = one free month of Pro" milestone.
- *
- * The grant itself is decided in Postgres (trigger on `referrals` ->
- * `grant_referral_milestone`), so this card only ever *reports* server truth:
- * it reads `my_referral_milestone()` and never awards anything itself.
- */
+/** @doc Server-reported referral milestone: five verified friends unlock limited-time Pro. */
 import { useEffect, useState } from "react";
-import { Gift, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Milestone {
@@ -30,32 +23,18 @@ export default function MilestoneCard() {
     (async () => {
       const { data, error } = await (supabase as any).rpc("my_referral_milestone");
       if (!alive) return;
-      if (error || !data?.ok) {
-        setFailed(true);
-        return;
-      }
+      if (error || !data?.ok) { setFailed(true); return; }
       setState(data as Milestone);
     })();
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
-  // Never render a silent blank: say what happened.
-  if (failed) {
-    return (
-      <section className="rounded-[24px] border border-foreground/[0.08] bg-foreground/[0.02] p-5">
-        <p className="text-[13px] text-foreground/60">
-          Couldn't load your free-Pro progress right now. Refresh the page to try again.
-        </p>
-      </section>
-    );
-  }
-  if (!state) {
-    return (
-      <section className="h-[132px] animate-pulse rounded-[24px] border border-foreground/[0.08] bg-foreground/[0.02]" />
-    );
-  }
+  if (failed) return (
+    <section className="border-y border-[hsl(var(--referral-ink)/0.14)] py-4">
+      <p className="text-[13px] text-[hsl(var(--referral-ink)/0.62)]">We couldn&apos;t load your Pro progress. Refresh to try again.</p>
+    </section>
+  );
+  if (!state) return <section className="h-[126px] animate-pulse border-y border-[hsl(var(--referral-ink)/0.14)] bg-[hsl(var(--referral-sky)/0.55)]" />;
 
   const target = state.target || MILESTONE_TARGET;
   const done = Math.min(state.referrals, target);
@@ -63,47 +42,21 @@ export default function MilestoneCard() {
   const expires = state.expires_at ? new Date(state.expires_at) : null;
 
   return (
-    <section className="relative overflow-hidden rounded-[26px] border border-[#3FA9F5]/25 bg-gradient-to-br from-[#3FA9F5]/[0.14] via-[#3FA9F5]/[0.05] to-transparent p-5 shadow-[0_24px_60px_-34px_rgba(63,169,245,0.55)]">
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-[#3FA9F5]/20 blur-3xl"
-      />
-      <div className="relative flex items-start gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#3FA9F5]/15 text-[#2E90D6] ring-1 ring-[#3FA9F5]/35">
-          {state.granted ? <Sparkles className="h-5 w-5" /> : <Gift className="h-5 w-5" />}
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold tracking-tight text-foreground">
-            {state.granted ? "Pro unlocked — on us" : `Invite ${target} friends, get Pro free`}
-          </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-foreground/60">
-            {state.granted
-              ? expires
-                ? `Your free Pro month is active until ${expires.toLocaleDateString()}.`
-                : "Your free Pro period is active."
-              : state.remaining === 0
-                ? "You reached the goal — your free Pro month is being applied."
-                : `${state.remaining} more ${state.remaining === 1 ? "friend" : "friends"} and Pro is free for a limited period.`}
+    <section className="border-y border-[hsl(var(--referral-ink)/0.14)] py-5">
+      <div className="flex items-start justify-between gap-5">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.48)]">Your invitation progress</p>
+          <p className="mt-2 font-serif text-[26px] leading-none text-[hsl(var(--referral-ink))]">{state.granted ? "Pro is active." : `You are ${state.remaining ? `${state.remaining} friends` : "there"} away.`}</p>
+          <p className="mt-2 max-w-[500px] text-[13px] leading-relaxed text-[hsl(var(--referral-ink)/0.58)]">
+            {state.granted ? (expires ? `Your limited-time Pro access is active until ${expires.toLocaleDateString()}.` : "Your limited-time Pro access is active.") : "Verified invitations count toward your free limited-time Pro access."}
           </p>
         </div>
+        <span className="shrink-0 font-serif text-[28px] leading-none text-[hsl(var(--referral-sky-deep))]">{pct}%</span>
       </div>
-
-      <div className="relative mt-4 flex items-center gap-1.5" aria-hidden>
-        {Array.from({ length: target }).map((_, i) => (
-          <span
-            key={i}
-            className={`h-2 flex-1 rounded-full transition-colors ${
-              i < done
-                ? "bg-gradient-to-r from-[#7CCBF7] to-[#3FA9F5] shadow-[0_0_14px_-2px_rgba(63,169,245,0.9)]"
-                : "bg-foreground/[0.10]"
-            }`}
-          />
-        ))}
+      <div className="mt-5 grid grid-cols-5 gap-1.5" aria-label={`${done} of ${target} friends joined`}>
+        {Array.from({ length: target }).map((_, i) => <span key={i} className={`h-2 rounded-full ${i < done ? "bg-[hsl(var(--referral-sky-deep))]" : "bg-[hsl(var(--referral-ink)/0.12)]"}`} />)}
       </div>
-      <p className="relative mt-2 text-[12px] text-foreground/50">
-        {done} / {target} friends joined ({pct}%)
-      </p>
+      <p className="mt-2 text-[11px] text-[hsl(var(--referral-ink)/0.45)]">{done} of {target} friends joined</p>
     </section>
   );
 }

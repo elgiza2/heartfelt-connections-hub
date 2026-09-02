@@ -8,3 +8,4 @@
 - [x] Internal multi-agent router (coder/researcher/analyst/writer/operator/general) with per-agent model ladders, coding on Kimi K3
 - [ ] Connections screen for user-provided API keys (Brave, others)
 - [ ] Parallel specialist sub-agents for long research reports
+- [ ] Rebuild referral page around the approved artwork with a clean, icon-free interface
