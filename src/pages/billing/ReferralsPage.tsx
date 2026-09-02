@@ -5,15 +5,9 @@ import {
   useCallback,
   createContext,
   useContext,
-  useRef,
-  Suspense,
-  lazy,
 } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { X, Download, Copy } from "lucide-react";
-
-const QRCodeSVG = lazy(() => import("qrcode.react").then((m) => ({ default: m.QRCodeSVG })));
 
 import { supabase } from "@/integrations/supabase/client";
 import AppSidebar from "@/components/layout/AppSidebar";
