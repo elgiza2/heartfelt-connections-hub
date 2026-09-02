@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import PlanCard from "./PlanCard";
+import MilestoneCard from "./MilestoneCard";
 import { POINTS_PER_SIGNUP, useReferrals } from "../ReferralsPage";
 import { FALLBACK_REWARDS } from "./rewardsCatalog";
 
@@ -62,6 +63,9 @@ export default function DashboardTab() {
         </p>
       </section>
 
+
+      {/* 5 friends -> a free month of Pro */}
+      <MilestoneCard />
 
       {/* Points balance */}
       <section className="rounded-[24px] border border-foreground/[0.08] bg-foreground/[0.02] p-5">

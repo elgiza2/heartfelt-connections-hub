@@ -15,6 +15,7 @@ import { fingerprint, loopInstruction, verdictFor } from "./loopGuard.ts";
 import { askUser, detectBlock, detectLargeAmount, openQuestion, resolveQuestion } from "./questions.ts";
 import { classifyPlanRisk, critique, makePlan, savePlanReview } from "./planner.ts";
 import { webSearch } from "./tools.ts";
+import { askModel } from "./llm.ts";
 import { type AgentAction, decideNextAction, runTool } from "./executor.ts";
 import {
   type ActivityEvent,
@@ -603,10 +604,13 @@ export async function tickRun(supabase: SupabaseClient, run: RunRow): Promise<Ru
   if (mapped === "running") patch.phase = "working";
 
   const latest = steps[steps.length - 1];
-  const latestText = [latest?.nextGoal, latest?.evaluationPreviousGoal, latest?.url]
-    .filter(Boolean)
-    .join(" · ");
-  if (latestText) patch.status_text = (latest?.nextGoal || latestText).slice(0, 240);
+  // The status line is read by a human, so it must be a sentence about the
+  // work — never a bare URL and never the browser's `about:blank` placeholder.
+  const humanStatus = [latest?.nextGoal, latest?.evaluationPreviousGoal]
+    .map((text) => String(text ?? "").trim())
+    .find((text) => text && text !== "about:blank" && !/^[a-z]+:\/\//i.test(text));
+  if (humanStatus) patch.status_text = humanStatus.slice(0, 240);
+
 
   // --- loop detection ------------------------------------------------------
   if (latest && fresh.length) {
@@ -802,8 +806,9 @@ export async function tickAgentic(supabase: SupabaseClient, run: RunRow): Promis
     if (control?.status === "canceled") return { ...current, status: "canceled" };
     if (control?.stop_requested) return await tickRun(supabase, { ...current, stop_requested: true });
     if (stepCount > MAX_STEPS) {
-      await finish(supabase, current, "error", "Step budget exhausted");
-      return { ...current, status: "error" };
+      // Do not throw the work away: report what exists, honestly.
+      await salvage(supabase, current, "The task reached its maximum number of work steps.");
+      return { ...current, status: "done" };
     }
 
     // Mid-run steering: whatever the user queued while we were working gets
@@ -861,13 +866,12 @@ export async function tickAgentic(supabase: SupabaseClient, run: RunRow): Promis
         },
       );
       if (dead >= MAX_DECIDE_FAILURES) {
-        await finish(
+        await salvage(
           supabase,
           current,
-          "error",
-          "The planning model is unavailable right now, so the task could not continue. No usable model key answered.",
+          "The planning step stopped responding, so no further actions could be taken.",
         );
-        return { ...current, status: "error" };
+        return { ...current, status: "done" };
       }
       break;
     }
@@ -1304,7 +1308,50 @@ async function reviewFinished(
   return finished ?? run;
 }
 
+/**
+ * Never end a run with a bare error message.
+ *
+ * When the loop hits a hard ceiling (step budget, planner outage) the work
+ * already done still has value: files written, pages read, findings gathered.
+ * This composes an honest report out of the transcript in the user's language,
+ * states plainly what is missing and why, and finishes the run with that
+ * report attached instead of a one-line failure.
+ */
+async function salvage(
+  supabase: SupabaseClient,
+  run: RunRow,
+  blocker: string,
+): Promise<void> {
+  let report = "";
+  try {
+    const transcript = await agenticTranscript(supabase, run.id);
+    report =
+      (await askModel(
+        supabase,
+        [
+          "You are closing out a task that could not be fully finished.",
+          "Write the final report for the user in THEIR language and dialect (match the goal's language exactly, never mix languages).",
+          "Structure it: what was accomplished, the concrete findings/links/files produced, what is still missing, why it is missing, and the single next step.",
+          "Use only real information from the trace. Never invent results.",
+          "Never mention tool names, step numbers, checkpoints, JSON, model names or any internal log line.",
+        ].join("\n"),
+        `Goal:\n${String(run.goal ?? "")}\n\nWhat happened:\n${transcript}\n\nBlocker: ${blocker}`,
+      )) || "";
+  } catch {
+    report = "";
+  }
+  await finish(
+    supabase,
+    run,
+    "done",
+    null,
+    report || `${blocker}\n\nThe work stopped here — everything produced so far is attached.`,
+    null,
+  );
+}
+
 async function finish(
+
   supabase: SupabaseClient,
   run: RunRow,
   status: "done" | "error",

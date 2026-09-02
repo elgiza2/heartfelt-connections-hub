@@ -117,6 +117,48 @@ async function modelCall(
     : { ok: false, output: "The model returned nothing — retry with a shorter prompt." };
 }
 
+/**
+ * Structured table read. Deliberately NOT raw SQL: the model names a table,
+ * the columns it wants and simple equality filters, and we build the query
+ * with the typed client so nothing user-supplied is ever interpolated.
+ */
+async function tableQuery(args: Record<string, any>): Promise<ToolResult> {
+  const table = String(args.table ?? args.from ?? "").trim();
+  if (!table) {
+    return {
+      ok: false,
+      output:
+        'This tool reads one table. Call it again with { table, columns?, filters?, order?, limit? } — for example { "table": "profiles", "columns": "id,plan", "limit": 20 }.',
+    };
+  }
+  try {
+    let query = (supabase.from(table as never) as any).select(String(args.columns ?? "*"));
+    const filters = (args.filters ?? args.where) as Record<string, unknown> | undefined;
+    if (filters && typeof filters === "object") {
+      for (const [column, value] of Object.entries(filters)) query = query.eq(column, value as never);
+    }
+    if (args.order) query = query.order(String(args.order), { ascending: args.ascending !== false });
+    query = query.limit(Math.min(Number(args.limit ?? 50) || 50, 500));
+    const { data, error } = await query;
+    if (error) {
+      return {
+        ok: false,
+        output: `Could not read "${table}": ${error.message}. Check the table or column names, or reach the same data another way (an API call or the cloud browser).`,
+      };
+    }
+    const rows = (data ?? []) as unknown[];
+    return {
+      ok: true,
+      output: rows.length ? clip(JSON.stringify(rows, null, 2)) : `No rows in "${table}" for those filters.`,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      output: `Read failed: ${error instanceof Error ? error.message : "unknown error"}. Try a different source for this data.`,
+    };
+  }
+}
+
 async function dataCall(
   service: string,
   op: string,
@@ -125,26 +167,45 @@ async function dataCall(
 ): Promise<ToolResult> {
   if (service === "memory" && op === "remember" && opts.userId) {
     const content = String(args.content ?? args.value ?? "");
-    await supabase.from("agent_memory").insert({
+    if (!content.trim()) return { ok: false, output: "Nothing to remember — pass the fact as `content`." };
+    const { error } = await supabase.from("agent_memory").insert({
       user_id: opts.userId,
       kind: "user_fact",
       key: String(args.key ?? (content.slice(0, 60) || "fact")),
       value: content,
       source_run_id: opts.runId ?? null,
     } as never);
+    // Report the truth: a silent "saved" on a failed write makes the agent lie.
+    if (error) return { ok: false, output: `Could not save to memory: ${error.message}` };
     return { ok: true, output: "Saved to long-term memory." };
   }
   if (service === "memory" && (op === "recall" || op === "profile") && opts.userId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("agent_memory")
       .select("key, value")
       .eq("user_id", opts.userId)
       .order("updated_at", { ascending: false })
       .limit(20);
+    if (error) return { ok: false, output: `Could not read memory: ${error.message}` };
     const rows = (data ?? []) as { key: string; value: string }[];
     return {
       ok: true,
       output: rows.map((r) => `- ${r.key}: ${r.value}`).join("\n") || "No memories yet.",
+    };
+  }
+
+  // Real executor for every data-store read.
+  if (service === "sql" || service === "database" || service === "table" || op === "query" || op === "select") {
+    return tableQuery(args);
+  }
+
+  // Spreadsheet / dataframe / vector work is pure computation — run it for real.
+  if (service === "sheet" || service === "dataframe" || service === "vector" || service === "stats") {
+    const code = String(args.code ?? args.script ?? "").trim();
+    if (code) return runCode(code);
+    return {
+      ok: false,
+      output: `To do "${service}.${op}", pass the transformation as JavaScript in \`code\` (the rows are yours to embed) and it will actually execute — or write the result with files.write.`,
     };
   }
 
@@ -155,10 +216,11 @@ async function dataCall(
     };
   }
   return {
-    ok: true,
-    output: `Handle "${service}.${op}" with sandbox.run_js (compute), sql.query (data) or files.write (output) — those executors are available now.`,
+    ok: false,
+    output: `"${service}.${op}" has no direct executor. Reach the same outcome another way: sandbox.run_js for computation, a data read for stored rows, an authenticated http call, the cloud browser, or files.write for output. Pick one and continue — do not stop the task.`,
   };
 }
+
 
 /** Runs one catalog tool by id. */
 export async function runCatalogTool(
@@ -177,53 +239,79 @@ export async function runCatalogTool(
   const started = Date.now();
   let result: ToolResult;
 
-  if (tool.kind === "code") {
-    result = await runCode(String(args.code ?? args.script ?? ""));
-  } else if (tool.kind === "web") {
-    result = await webCall(tool.op, args);
-  } else if (tool.kind === "model") {
-    result = await modelCall(tool.service, tool.op, args);
-  } else if (tool.kind === "file") {
-    result =
-      tool.op === "read" || tool.op.startsWith("read_")
-        ? readFile(opts.ctx, String(args.path ?? ""))
-        : writeFile(opts.ctx, String(args.path ?? "output.md"), String(args.content ?? ""));
-  } else if (tool.kind === "http") {
-    const key = tool.auth === "none" ? null : await serviceKey(tool.service);
-    if (tool.auth !== "none" && !key) {
+  try {
+    if (tool.kind === "code") {
+      const code = String(args.code ?? args.script ?? args.query ?? "").trim();
+      result = code
+        ? await runCode(code)
+        : {
+            ok: false,
+            output: `"${tool.id}" executes JavaScript. Pass the program in \`code\`; express Python/SQL logic as equivalent JavaScript.`,
+          };
+    } else if (tool.kind === "web") {
+      result = await webCall(tool.op, args);
+    } else if (tool.kind === "model") {
+      result = await modelCall(tool.service, tool.op, args);
+    } else if (tool.kind === "file") {
+      result =
+        tool.op === "read" || tool.op.startsWith("read_")
+          ? readFile(opts.ctx, String(args.path ?? ""))
+          : writeFile(opts.ctx, String(args.path ?? "output.md"), String(args.content ?? ""));
+    } else if (tool.kind === "http") {
+      const key = tool.auth === "none" ? null : await serviceKey(tool.service);
+      if (tool.auth !== "none" && !key) {
+        result = {
+          ok: false,
+          output: `${tool.serviceName} is not connected yet. Do not abandon the task: do the same job through the cloud browser with login_identity, use a public alternative, or ask the user to connect it (emit <CONNECT type="api" app="${tool.service}" />).`,
+        };
+      } else {
+        result = await httpCall(tool.base, args, key);
+      }
+    } else if (tool.kind === "browser") {
       result = {
-        ok: false,
-        output: `${tool.serviceName} is not connected yet. Either do the same job through the cloud browser with login_identity, or ask the user to connect it (emit <CONNECT type="api" app="${tool.service}" />).`,
+        ok: true,
+        output: `BROWSER_STEP: open ${tool.base || String(args.url ?? tool.serviceName)} and perform "${tool.op}". Use login_identity for any sign-in and check_mail for verification codes.`,
       };
     } else {
-      result = await httpCall(tool.base, args, key);
+      result = await dataCall(tool.service, tool.op, args, opts);
     }
-  } else if (tool.kind === "browser") {
+  } catch (error) {
+    // An executor throwing must never end the task — hand back a recoverable
+    // failure so the agent picks a different route.
     result = {
-      ok: true,
-      output: `BROWSER_STEP: open ${tool.base || String(args.url ?? tool.serviceName)} and perform "${tool.op}". Use login_identity for any sign-in and check_mail for verification codes.`,
+      ok: false,
+      output: `"${tool.id}" threw: ${
+        error instanceof Error ? error.message : "unknown error"
+      }. Try a different tool or a different route to the same outcome.`,
     };
-  } else {
-    result = await dataCall(tool.service, tool.op, args, opts);
   }
 
   if (opts.userId) {
-    // Fire and forget: telemetry must never break the run.
-    void supabase.from("agent_tool_invocations").insert({
-      user_id: opts.userId,
-      session_id: opts.runId ?? null,
-      agent_slug: opts.agentSlug ?? null,
-      tool_key: tool.id,
-      input: args as never,
-      output: { output: result.output.slice(0, 4_000) } as never,
-      status: result.ok ? "ok" : "error",
-      error: result.ok ? null : result.output.slice(0, 500),
-      latency_ms: Date.now() - started,
-    } as never);
+    // Telemetry must never break the run — but a lost audit row is still logged.
+    void supabase
+      .from("agent_tool_invocations")
+      .insert({
+        user_id: opts.userId,
+        session_id: opts.runId ?? null,
+        agent_slug: opts.agentSlug ?? null,
+        tool_key: tool.id,
+        input: args as never,
+        output: { output: result.output.slice(0, 4_000) } as never,
+        status: result.ok ? "ok" : "error",
+        error: result.ok ? null : result.output.slice(0, 500),
+        latency_ms: Date.now() - started,
+      } as never)
+      .then(
+        ({ error }) => {
+          if (error) console.warn("tool telemetry not recorded:", error.message);
+        },
+        (error: unknown) => console.warn("tool telemetry not recorded:", error),
+      );
   }
 
   return result;
 }
+
 
 /** `tool_search` implementation: plain-language need -> shortlist of tool ids. */
 export function searchToolsFor(need: string, limit = 12): ToolResult {

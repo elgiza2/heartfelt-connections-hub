@@ -136,8 +136,14 @@ async function braveSearch(query: string, count: number, offset = 0): Promise<We
       const title = decodeHtml(
         block.match(/class="title[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? link,
       ).slice(0, 220);
+      // Brave renames these classes often. Try every layout it has shipped and
+      // fall back to the first meaningful text node, so results never arrive
+      // as bare links — a snippet-less result is useless to the model.
       const snippet = decodeHtml(
-        block.match(/class="snippet-description[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ?? "",
+        block.match(/class="content[ "][^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
+          block.match(/class="snippet-description[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
+          block.match(/class="[^"]*snippet-content[^"]*"[^>]*>([\s\S]*?)<\/div>/)?.[1] ??
+          "",
       ).slice(0, 900);
       results.push({ title, url: link, snippet });
       if (results.length >= count) break;
@@ -205,6 +211,52 @@ async function googleNewsSearch(
 }
 
 /**
+ * Third keyless source. DuckDuckGo's HTML endpoint needs no key, answers from
+ * datacenter IPs, and stays on topic — it covers the gap when Brave throttles
+ * (429) and the query is not newsworthy enough for Google News.
+ */
+async function duckSearch(query: string, count: number, offset = 0): Promise<WebSearchResult[]> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const resp = await fetch("https://html.duckduckgo.com/html/", {
+      method: "POST",
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      body: new URLSearchParams({ q: query, s: String(Math.max(offset, 0)) }).toString(),
+      signal: controller.signal,
+    });
+    if (!resp.ok) return [];
+    const html = await resp.text();
+    const out: WebSearchResult[] = [];
+    const seen = new Set<string>();
+    const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) && out.length < count) {
+      let link = decodeHtml(m[1].replace(/&amp;/g, "&"));
+      // DuckDuckGo wraps hits in /l/?uddg=<encoded target>.
+      const wrapped = link.match(/[?&]uddg=([^&]+)/)?.[1];
+      if (wrapped) link = decodeURIComponent(wrapped);
+      if (!/^https?:\/\//.test(link) || seen.has(link)) continue;
+      seen.add(link);
+      out.push({
+        title: decodeHtml(m[2]).slice(0, 220),
+        url: link,
+        snippet: decodeHtml(m[3]).slice(0, 900),
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
  * Keyless path. Brave gives the best general web results but throttles bursts
  * hard (429), so its calls go through one spaced-out queue; Google News fills
  * the rest. The old Bing RSS backup was dropped on purpose — it answered with
@@ -227,18 +279,23 @@ async function bravePaced(query: string, count: number, offset: number): Promise
 }
 
 async function keylessSearch(query: string, count: number, offset = 0): Promise<WebSearchResponse> {
-  const [brave, news] = await Promise.all([
+  // Three independent sources in parallel: if any one is throttled or blocked
+  // the search still returns evidence instead of an empty list.
+  const [brave, duck, news] = await Promise.all([
     bravePaced(query, count, offset),
+    duckSearch(query, count, offset),
     googleNewsSearch(query, count, offset),
   ]);
   const seen = new Set<string>();
   const merged: WebSearchResult[] = [];
-  for (const item of [...brave, ...news.results]) {
+  for (const item of [...brave, ...duck, ...news.results]) {
     if (seen.has(item.url) || merged.length >= count) continue;
     seen.add(item.url);
     merged.push(item);
   }
-  return merged.length ? { results: merged } : { results: [], error: news.error ?? "no results" };
+  return merged.length
+    ? { results: merged }
+    : { results: [], error: news.error ?? "every search source returned nothing" };
 }
 
 /**

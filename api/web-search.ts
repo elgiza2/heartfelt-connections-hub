@@ -30,7 +30,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch (err) {
     return new Response(
       JSON.stringify({ results: [], error: err instanceof Error ? err.message : "search failed" }),
-      { status: 200, headers },
+      { status: 502, headers },
     );
   }
 }
