@@ -1,6 +1,17 @@
 import { startJob, subscribeJob, resumeJob } from "@/lib/jobs/client";
 import { getAnonFingerprint } from "@/lib/anonFingerprint";
 import { isFastLaneEligible, tryFastChat } from "@/lib/chat/fastChat";
+import { readChatModelPreferences } from "@/lib/chatModelPreferences";
+
+/** The deep-thinking composer toggle, read fresh for every turn. */
+function deepThinkingEnabled(): boolean {
+  try {
+    return readChatModelPreferences().deepThinking === true;
+  } catch {
+    return false;
+  }
+}
+
 
 export const GUEST_QUOTA_ERROR = "GUEST_QUOTA_EXCEEDED";
 
