@@ -317,7 +317,9 @@ export async function streamChat({
         onModel,
         onUsage,
         onReasoning,
+        thinking: deepThinkingEnabled(),
       });
+
       if (outcome === "answered") {
         await onDone();
         return;
