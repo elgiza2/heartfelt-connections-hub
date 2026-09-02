@@ -143,7 +143,6 @@ export const EGYPTIAN_PAGES_4: Record<string, string> = {
   "Megsy partner program artwork": "صورة برنامج شركاء ميجسي",
   "Revenue share": "نسبة الأرباح",
   Paid: "الدفع",
-  Monthly: "شهري",
   Duration: "المدة",
   Recurring: "مستمر",
   "View earnings": "شوف أرباحك",
