@@ -16454,6 +16454,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purge_system_logs: { Args: never; Returns: undefined }
       pvp_add_bots: {
         Args: { _count: number; _match_id: string }
         Returns: Json
