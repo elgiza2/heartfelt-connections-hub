@@ -476,14 +476,14 @@ const ReferralsPage = () => {
   return (
     <ReferralsCtx.Provider value={ctx}>
       {isDesktop ? (
-        <div className="flex h-[100dvh] w-full overflow-hidden bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
+        <div className="flex h-[100dvh] w-full overflow-hidden bg-background text-foreground">
           <aside
             style={{ width: sidebarWidth, minWidth: sidebarWidth, flexBasis: sidebarWidth }}
             className="relative z-40 hidden shrink-0 overflow-hidden transition-[width,min-width,flex-basis] duration-300 md:flex"
           >
             <AppSidebar open inline onClose={() => {}} onNewChat={() => navigate("/")} />
           </aside>
-          <main className="relative min-w-0 flex-1 overflow-y-auto bg-[hsl(var(--referral-sky))]">
+          <main className="relative min-w-0 flex-1 overflow-y-auto bg-background">
             {content}
             {onRewards ? null : actionBar}
           </main>
@@ -495,7 +495,7 @@ const ReferralsPage = () => {
           onNewChat={() => navigate("/")}
           currentMode="chat"
         >
-          <div className="min-h-[100dvh] bg-[hsl(var(--referral-sky))] text-[hsl(var(--referral-ink))]">
+          <div className="min-h-[100dvh] bg-background text-foreground">
             {content}
             {onRewards ? null : actionBar}
           </div>
@@ -503,15 +503,15 @@ const ReferralsPage = () => {
       )}
 
       {qrOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[hsl(var(--referral-ink)/0.72)] px-5 backdrop-blur-md" onClick={() => setQrOpen(false)}>
-          <div className="relative w-full max-w-sm rounded-[28px] border border-[hsl(var(--background)/0.5)] bg-[hsl(var(--referral-sky))] p-6 text-[hsl(var(--referral-ink))] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-[hsl(var(--referral-ink)/0.12)] bg-[hsl(var(--background)/0.5)] text-[hsl(var(--referral-ink)/0.7)]">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-5 backdrop-blur-md" onClick={() => setQrOpen(false)}>
+          <div className="relative w-full max-w-sm rounded-[24px] border border-border bg-background p-6 text-foreground shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setQrOpen(false)} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-border text-muted-foreground">
               <X className="h-4 w-4" />
             </button>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--referral-ink)/0.5)]">Megsy invitation</p>
-            <h2 className="mt-2 font-serif text-[28px] leading-none">Scan to join Pro.</h2>
-            <div className="mx-auto mt-5 grid w-max place-items-center rounded-[22px] bg-[hsl(var(--background))] p-5 shadow-lg">
-              {link ? <Suspense fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}><QRCodeSVG ref={qrRef} value={link} size={200} bgColor="#FFFFFF" fgColor="#0a0a0a" level="M" /></Suspense> : <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-[hsl(var(--referral-ink)/0.1)]" />}
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Megsy invitation</p>
+            <h2 className="mt-2 text-[20px] font-semibold">Scan to join Pro</h2>
+            <div className="mx-auto mt-5 grid w-max place-items-center rounded-[22px] bg-white p-5 shadow-lg">
+              {link ? <Suspense fallback={<div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-foreground/10" />}><QRCodeSVG ref={qrRef} value={link} size={200} bgColor="#FFFFFF" fgColor="#0a0a0a" level="M" /></Suspense> : <div className="h-[200px] w-[200px] animate-pulse rounded-xl bg-foreground/10" />}
             </div>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <GhostButton onClick={copyLink}><Copy className="h-4 w-4" /> Copy</GhostButton>
