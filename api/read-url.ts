@@ -28,7 +28,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch (err) {
     return new Response(
       JSON.stringify({ pages: [], error: err instanceof Error ? err.message : "read failed" }),
-      { status: 200, headers },
+      { status: 502, headers },
     );
   }
 }

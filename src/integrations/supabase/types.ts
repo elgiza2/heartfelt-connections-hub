@@ -10489,6 +10489,33 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_milestone_grants: {
+        Row: {
+          expires_at: string
+          granted_at: string
+          id: string
+          milestone: number
+          plan: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          granted_at?: string
+          id?: string
+          milestone?: number
+          plan?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          granted_at?: string
+          id?: string
+          milestone?: number
+          plan?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referral_points: {
         Row: {
           created_at: string
@@ -16130,6 +16157,7 @@ export type Database = {
         Returns: Json
       }
       grant_prize_to_all: { Args: never; Returns: Json }
+      grant_referral_milestone: { Args: { _referrer: string }; Returns: Json }
       grant_user_credits: {
         Args: {
           p_action_type: string
@@ -16323,6 +16351,7 @@ export type Database = {
         }
         Returns: string
       }
+      my_referral_milestone: { Args: never; Returns: Json }
       next_prize_broadcast_targets: {
         Args: { _limit: number }
         Returns: {

@@ -590,15 +590,15 @@ export async function advanceDevRun(
       if (call.tool === "write_file" && call.path) {
         const list = written.get(task.id) ?? [];
         if (list.filter((p) => p === call.path).length >= 3) {
-          // Fourth attempt at the same file in one task: the model is looping.
-          await db
-            .from("dev_tasks")
-            .update({ status: "done", result: `wrote ${list.length} files` })
-            .eq("id", task.id);
-          task.status = "done";
-          await event(db, run, "task_done", task.title, { summary: "auto-closed (repeat writes)" });
-          break;
+          // Fourth attempt at the same file: a loop, not a finished task.
+          // Steer to a different approach instead of declaring false success.
+          await event(db, run, "tool", `skip write_file ${call.path}`, {
+            ok: false,
+            output: `You already wrote ${call.path} three times without progress. Do NOT write that file again. Change approach: edit a different file, adjust the plan, or state the blocker and move to the next task.`,
+          });
+          continue;
         }
+
         list.push(call.path);
         written.set(task.id, list);
       }
@@ -617,10 +617,11 @@ export async function advanceDevRun(
             .eq("id", project.id);
           result.output += `; synced to GitHub (${savedCommit.slice(0, 7)})`;
         } catch (error) {
-          result.ok = false;
-          result.output = `File was written in the workspace but GitHub sync failed: ${
+          // The write itself succeeded. Report the sync problem separately so
+          // the agent retries only the sync instead of rewriting the file.
+          result.output += `; saved locally, but the GitHub sync failed (${
             error instanceof Error ? error.message : String(error)
-          }`;
+          }). Continue the task and retry the sync later.`;
         }
       }
       await event(

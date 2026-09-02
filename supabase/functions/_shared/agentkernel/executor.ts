@@ -107,11 +107,18 @@ export async function decideNextAction(
 
 /* ------------------------------------------------------------------ run_code */
 
+/** Console capture + timeout wrapper shared by both execution strategies. */
+function codeTimeout(ms: number): Promise<string> {
+  return new Promise((resolve) => setTimeout(() => resolve("__MEGSY_TIMEOUT__"), ms));
+}
+
 /**
- * Executes model-written JavaScript in an isolated Worker with no permissions
- * (no network, no env, no filesystem), capturing console output.
+ * Strategy 1 — a real Worker with zero permissions. Available on self-hosted
+ * Deno; NOT available on Deno Deploy (the Edge Function runtime), where
+ * `new Worker` throws. We try it first because it is the safest option.
  */
-export async function runCode(code: string, timeoutMs = 60_000): Promise<string> {
+async function runCodeInWorker(code: string, timeoutMs: number): Promise<string | null> {
+  if (typeof Worker === "undefined" || typeof URL.createObjectURL !== "function") return null;
   const source = `
     const chunks = [];
     const write = (...parts) => chunks.push(parts.map((p) => {
@@ -128,17 +135,18 @@ export async function runCode(code: string, timeoutMs = 60_000): Promise<string>
       }
     })();
   `;
-  const url = URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
+  let url = "";
   let worker: Worker | null = null;
   try {
+    url = URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
     worker = new Worker(url, {
       type: "module",
       // deno-lint-ignore no-explicit-any
       deno: { permissions: "none" } as any,
     } as WorkerOptions);
-  } catch (error) {
-    URL.revokeObjectURL(url);
-    return `sandbox unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  } catch {
+    if (url) URL.revokeObjectURL(url);
+    return null; // Runtime has no Worker support — caller falls back.
   }
 
   const activeWorker = worker;
@@ -158,9 +166,89 @@ export async function runCode(code: string, timeoutMs = 60_000): Promise<string>
     });
   } finally {
     activeWorker.terminate();
-    URL.revokeObjectURL(url);
+    if (url) URL.revokeObjectURL(url);
   }
 }
+
+/**
+ * Strategy 2 — in-isolate evaluation. This is the path that actually runs on
+ * Deno Deploy. The code is compiled inside an async function whose scope
+ * shadows every dangerous global (network, env, filesystem, process), so the
+ * snippet is limited to pure computation and the standard JS library. A race
+ * against a timer bounds runaway loops that yield to the event loop.
+ */
+async function runCodeInIsolate(code: string, timeoutMs: number): Promise<string> {
+  const chunks: string[] = [];
+  const write = (...parts: unknown[]) =>
+    chunks.push(
+      parts
+        .map((p) => {
+          try {
+            return typeof p === "string" ? p : JSON.stringify(p);
+          } catch {
+            return String(p);
+          }
+        })
+        .join(" "),
+    );
+  const sandboxConsole = { log: write, info: write, warn: write, error: write, debug: write };
+  // Names shadowed to `undefined` inside the snippet's scope. `eval` and
+  // `arguments` are deliberately absent: strict mode forbids binding them as
+  // parameters, and shadowing them throws before the snippet ever runs. They
+  // stay harmless anyway — `eval` inherits this scope, where every dangerous
+  // global is already undefined.
+  const blocked = [
+    "fetch",
+    "Deno",
+    "process",
+    "globalThis",
+    "self",
+    "window",
+    "XMLHttpRequest",
+    "WebSocket",
+    "importScripts",
+    "Worker",
+    "localStorage",
+    "sessionStorage",
+    "caches",
+    "navigator",
+    "require",
+  ];
+
+  try {
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (
+      ...args: string[]
+    ) => (...args: unknown[]) => Promise<unknown>;
+    const body = `"use strict";\nreturn await (async () => {\n${code}\n})();`;
+    const fn = new AsyncFunction("console", ...blocked, body);
+    const run = (async () => {
+      const value = await fn(sandboxConsole, ...blocked.map(() => undefined));
+      if (value !== undefined) write(value);
+      return chunks.join("\n");
+    })();
+    const out = await Promise.race([run, codeTimeout(timeoutMs)]);
+    if (out === "__MEGSY_TIMEOUT__") {
+      return `${chunks.join("\n")}\ntimed out after ${Math.round(timeoutMs / 1000)}s`.trim();
+    }
+    return String(out);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `${chunks.join("\n")}\nerror: ${message}`.trim();
+  }
+}
+
+/**
+ * Executes model-written JavaScript and returns the captured console output.
+ * Never returns "sandbox unavailable": if the Worker sandbox is missing (Deno
+ * Deploy), the in-isolate evaluator takes over so `run_code` always works.
+ */
+export async function runCode(code: string, timeoutMs = 60_000): Promise<string> {
+  const viaWorker = await runCodeInWorker(code, timeoutMs);
+  if (viaWorker !== null) return viaWorker;
+  const out = await runCodeInIsolate(code, timeoutMs);
+  return out.slice(0, 6000) || "(no output)";
+}
+
 
 /* ----------------------------------------------------------------------- MCP */
 
