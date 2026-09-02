@@ -269,6 +269,7 @@ const ReferralsPage = () => {
   const { pathname } = useLocation();
   const onRewards = pathname.endsWith("/rewards");
   const lang = useUserLang();
+  const milestone = useReferralMilestone();
   const [userId, setUserId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [refs, setRefs] = useState<Referral[]>([]);
@@ -416,6 +417,7 @@ const ReferralsPage = () => {
     openPromoter,
     openQr: () => {},
     reload: loadData,
+    milestone,
   };
 
   const content = (
