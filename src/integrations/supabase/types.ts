@@ -6607,6 +6607,8 @@ export type Database = {
           created_at: string
           decide_failures: number
           error: string | null
+          execution_lease_id: string | null
+          execution_lease_until: string | null
           expires_at: string | null
           external_run_id: string | null
           failure_class: string | null
@@ -6648,6 +6650,8 @@ export type Database = {
           created_at?: string
           decide_failures?: number
           error?: string | null
+          execution_lease_id?: string | null
+          execution_lease_until?: string | null
           expires_at?: string | null
           external_run_id?: string | null
           failure_class?: string | null
@@ -6689,6 +6693,8 @@ export type Database = {
           created_at?: string
           decide_failures?: number
           error?: string | null
+          execution_lease_id?: string | null
+          execution_lease_until?: string | null
           expires_at?: string | null
           external_run_id?: string | null
           failure_class?: string | null
@@ -15084,6 +15090,58 @@ export type Database = {
     }
     Functions: {
       accept_conversation_invite: { Args: { p_token: string }; Returns: Json }
+      acquire_long_run_lease: {
+        Args: { p_lease_id: string; p_lease_seconds?: number; p_run_id: string }
+        Returns: {
+          auto_continue_allowed: boolean
+          auto_continue_at: string | null
+          awaiting_plan_ack: boolean
+          budget_ms: number
+          conversation_id: string | null
+          created_at: string
+          decide_failures: number
+          error: string | null
+          execution_lease_id: string | null
+          execution_lease_until: string | null
+          expires_at: string | null
+          external_run_id: string | null
+          failure_class: string | null
+          goal: string
+          id: string
+          kind: string
+          last_fingerprint: string | null
+          last_heartbeat_at: string
+          last_tool_at: string | null
+          live_view_url: string | null
+          loop_strikes: number
+          needs_input: boolean
+          notified_at: string | null
+          pending_guidance: string[]
+          pending_steering: string[]
+          phase: string | null
+          plan_id: string | null
+          provider: string | null
+          provider_key_id: string | null
+          result: Json | null
+          review_round: number
+          risk_level: string
+          sandbox_generation: number
+          sandbox_id: string | null
+          stall_count: number
+          status: string
+          status_text: string | null
+          step_count: number
+          stop_requested: boolean
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "long_runs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       acquire_media_key: {
         Args: { p_model_id: string; p_provider: string }
         Returns: {
@@ -16443,6 +16501,10 @@ export type Database = {
       }
       redeem_referral_reward: { Args: { p_reward_id: string }; Returns: Json }
       redeem_reward: { Args: { p_reward_slug: string }; Returns: Json }
+      release_long_run_lease: {
+        Args: { p_lease_id: string; p_run_id: string }
+        Returns: undefined
+      }
       report_provider_key_failure: {
         Args: { p_error: string; p_key_id: string }
         Returns: undefined
