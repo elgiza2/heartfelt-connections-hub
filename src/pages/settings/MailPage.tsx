@@ -576,21 +576,41 @@ export default function MailPage() {
   );
 
   if (isMobile) {
+    // Mail is a destination, not a settings detail page: open the app sidebar
+    // instead of walking back to /settings.
     return (
-      <ProfileGlassShell
-        title={tx("Mail")}
-        onBack={() => navigate("/settings")}
+      <MobilePushShell
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        onNewChat={() => navigate("/")}
+        currentMode="chat"
       >
-        {Body}
-      </ProfileGlassShell>
+        <div className="min-h-[100dvh] bg-background text-foreground">
+          <div
+            className="flex items-center gap-2 px-4 pb-1"
+            style={{ paddingTop: "max(env(safe-area-inset-top), 12px)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              aria-label={tx("Open menu")}
+              className="flex h-11 w-11 items-center justify-center rounded-full text-foreground transition active:scale-95"
+            >
+              <PanelLeft className="h-[20px] w-[20px] rtl:rotate-180" />
+            </button>
+            <h1 className="min-w-0 flex-1 truncate text-[19px] font-semibold tracking-tight">{tx("Mail")}</h1>
+          </div>
+          <div className="px-4 pb-24">{Body}</div>
+        </div>
+      </MobilePushShell>
     );
   }
   return (
     <DesktopSettingsLayout>
       <div className="mx-auto w-full max-w-2xl px-4 md:px-0">
         <header className="mb-4 flex items-center gap-3">
-          <RoundBtn label={tx("Back")} onClick={() => navigate("/settings")}>
-            <ArrowLeft className="h-[18px] w-[18px] rtl:rotate-180" />
+          <RoundBtn label={tx("Open menu")} onClick={toggleSidebar}>
+            <PanelLeft className="h-[18px] w-[18px] rtl:rotate-180" />
           </RoundBtn>
           <h1 className="min-w-0 flex-1 text-[24px] font-semibold leading-tight tracking-tight">{tx("Mail")}</h1>
         </header>
