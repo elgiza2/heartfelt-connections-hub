@@ -454,7 +454,7 @@ const ReferralsPage = () => {
             type="button"
             onClick={copyLink}
             disabled={!link}
-            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-foreground px-5 text-[14.5px] font-semibold tracking-tight text-background transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+            className="group relative inline-flex h-[52px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-[20px] bg-[#3FA9F5] px-5 text-[14.5px] font-semibold tracking-tight text-white transition-transform duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span
               aria-hidden

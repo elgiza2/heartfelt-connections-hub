@@ -95,7 +95,7 @@ export default function MilestoneCard() {
             key={i}
             className={`h-2 flex-1 rounded-full transition-colors ${
               i < done
-                ? "bg-gradient-to-r from-[#F6E7B7] to-[#C9A24C] shadow-[0_0_14px_-2px_rgba(201,162,76,0.9)]"
+                ? "bg-gradient-to-r from-[#7CCBF7] to-[#3FA9F5] shadow-[0_0_14px_-2px_rgba(63,169,245,0.9)]"
                 : "bg-foreground/[0.10]"
             }`}
           />
