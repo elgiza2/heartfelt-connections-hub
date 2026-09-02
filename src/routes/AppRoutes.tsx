@@ -30,6 +30,7 @@ import {
   ReferralsDashboardTab,
   KPage,
   ReferralResourcesPage,
+  ReferralPartnerTestPage,
   // integrations hub
   // settings
   SettingsPage,
@@ -222,6 +223,7 @@ export const AppRoutes = ({ currentUserId }: { currentUserId: string | null }) =
     <Route path="/showcase" element={toChat} />
     <Route path="/welcome" element={<OnboardingPage />} />
     <Route path="/test" element={<SplashTestPage />} />
+    <Route path="/testr" element={<ReferralPartnerTestPage />} />
     <Route path="/code" element={toChat} />
     <Route path="/build" element={toChat} />
     <Route path="/anything" element={toChat} />
