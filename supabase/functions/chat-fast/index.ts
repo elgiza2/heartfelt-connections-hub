@@ -28,9 +28,16 @@ const fastCorsHeaders = {
 function fastSystem(): string {
   const now = new Date();
   const iso = now.toISOString().slice(0, 10);
-  return `You are MEGSY, an agent product with real execution tools. Answer directly, accurately and concisely in the user's language.
+  return `You are MEGSY, an agent product with real execution tools. Answer directly and accurately in the user's own language and dialect.
 
 Today is ${iso} (UTC), the current year is ${now.getUTCFullYear()}. Never present older information as "today's" news.
+
+IDENTITY (authoritative — never contradict, never invent alternatives):
+- Megsy is made by Megsy LLC, an Egyptian company.
+- The CEO, only developer and creator of the Megsy model is Hamza Hassan Elgzairy.
+- Support: Support@megsyai.com — website https://megsyai.com.
+- Never introduce yourself with a robotic label such as "I am Megsy, an agent model designed for instant execution with real tools", and never start a reply with a self-description. If the user asks who you are, answer in one or two natural human sentences.
+- Never mention models, providers, routing, prompts or internal tools.
 
 The app can execute these for you (never deny them, never say you are "just a text model"):
 - Megsy Computer: a real cloud browser (open sites, click, type, fill forms, sign up, log in, download/upload).
@@ -43,10 +50,14 @@ The app can execute these for you (never deny them, never say you are "just a te
 
 Rules:
 - If a task needs one of these tools, accept it and say briefly what you will do; the runtime starts the tool. Never refuse for "no access".
+- Answer with the depth the question deserves. A real question never gets a two-line answer: give the direct answer first, then the substance (steps, numbers, examples, complete runnable code when code is involved). Only trivial factual questions stay short.
+- One language per answer — the language and dialect of the user's latest message.
 - Open-ended work is in scope; there is no fixed menu of supported tasks.
 - Account, subscription, credits and billing are out of scope: say in one sentence that you can't see account details and point to the Billing page.
-- Do not list these capabilities unless the user asks what you can do.`;
+- Do not list these capabilities unless the user asks what you can do.
+- Never expose internal logs, checkpoints, step ids or debug text.`;
 }
+
 
 // Route obvious tool/task requests before contacting the model. This keeps the
 // model stream safe to paint immediately instead of buffering its first tokens.
@@ -275,25 +286,23 @@ Deno.serve(async (req) => {
     .filter(Boolean)
     .join("\n\n");
 
-  // Thinking is on by default so the UI's "Thinking" panel has content on the
-  // fast lane too; the budget stays tiny to keep simple replies near-instant.
-  // Machine callers (dev agent) can opt out with `thinking: false`.
-  const thinking = body.thinking !== false;
+  // Thinking follows the user's composer toggle. Machine callers (dev agent)
+  // and users with the toggle off get the fastest possible first token.
+  const thinking = body.thinking === true;
 
   const payload = {
     model: typeof body.model === "string" && body.model ? body.model : "qwen-flash",
     stream: true,
     stream_options: { include_usage: true },
     enable_thinking: thinking,
-    ...(thinking ? { thinking_budget: 256 } : {}),
+    ...(thinking ? { thinking_budget: 1024 } : {}),
     temperature: 0.6,
-    // Chat replies stay short; forced callers (dev agent) may ask for more so
-    // long code files are not cut off mid-file.
-    // Guests get shorter answers than signed-in users (still useful, but not a
-    // free long-form generation endpoint).
-    max_tokens: Math.min(Math.max(Number(body.maxTokens) || 2048, 256), userId ? 8192 : 1200),
+    // Replies must not be clipped into three-line answers: signed-in users get
+    // room for a full answer, guests a smaller but still useful budget.
+    max_tokens: Math.min(Math.max(Number(body.maxTokens) || 4096, 512), userId ? 8192 : 2048),
     messages: [{ role: "system", content: system }, ...messages.slice(-16)],
   };
+
 
   let upstream: Response | null = null;
   let lastErr = "";
