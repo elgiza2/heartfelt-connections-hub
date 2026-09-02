@@ -247,6 +247,18 @@ const REFERRALS_FALLBACK: ReferralsContextValue = {
   openPromoter: () => {},
   openQr: () => {},
   reload: () => {},
+  milestone: {
+    state: null,
+    loading: true,
+    failed: false,
+    claiming: false,
+    isPartner: false,
+    referrals: 0,
+    target: 5,
+    remaining: 5,
+    claim: async () => ({ ok: false, granted: false }),
+    reload: async () => {},
+  },
 };
 
 const ReferralsCtx = createContext<ReferralsContextValue | null>(null);
