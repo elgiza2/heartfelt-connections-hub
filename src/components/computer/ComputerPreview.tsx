@@ -2,8 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Loader2, Monitor } from "lucide-react";
 import { useLongRun } from "@/hooks/useLongRun";
 import { clearActiveComputerRun, setActiveComputerRun } from "@/lib/computer/activeRun";
+import { cleanTrace, isInternalTraceLine } from "@/lib/computer/traceCleanup";
 import ThinkingTrace from "@/components/chat/ThinkingTrace";
 import { Button } from "@/components/ui/button";
+
 
 /**
  * Computer surface, reduced to two things only:
@@ -98,30 +100,28 @@ export function ComputerPreview({
     summary || rawOutput || (run?.status === "canceled" ? "تم إيقاف المهمة." : null);
 
   const lastStep = events.length ? events[events.length - 1] : null;
-  const thinking = run?.status_text || lastStep?.summary || lastStep?.title || "";
+  const rawThinking = run?.status_text || lastStep?.summary || lastStep?.title || "";
+  const thinking = isInternalTraceLine(rawThinking) ? "" : rawThinking;
 
-  // Real activity trace: every persisted kernel event, newest last. Nothing is
-  // synthesised here — the badge only ever shows what the backend reported.
+  // Real activity trace: every persisted kernel event, newest last. Internal
+  // bookkeeping (checkpoints, failure classes, raw tool errors) is filtered out
+  // — the user reads what happened, not the engine's log.
   const traceSteps = useMemo(
-    () =>
-      events
-        .map((e) => (e.summary || e.title || "").trim())
-        .filter((v, i, arr) => v.length > 0 && arr[i - 1] !== v),
+    () => cleanTrace(events.map((e) => e.summary || e.title || "")),
     [events],
   );
 
   // Reasoning / observations the kernel attached to its events.
   const traceText = useMemo(() => {
-    const out: string[] = [];
+    const lines: string[] = [];
     for (const e of events) {
       const meta = (e.metadata ?? null) as Record<string, unknown> | null;
       const thought = meta && typeof meta.thought === "string" ? meta.thought.trim() : "";
-      const detail = (e.detail || "").trim();
-      const line = thought || detail;
-      if (line && out[out.length - 1] !== line) out.push(line);
+      lines.push(thought || (e.detail || "").trim());
     }
-    return out.join("\n\n");
+    return cleanTrace(lines).join("\n\n");
   }, [events]);
+
 
   const activeTool = useMemo(() => {
     for (let i = events.length - 1; i >= 0; i -= 1) {

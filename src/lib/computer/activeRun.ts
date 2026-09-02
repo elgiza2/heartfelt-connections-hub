@@ -14,9 +14,15 @@ export function setActiveComputerRun(id: string | null) {
   listeners.forEach((l) => l(current));
 }
 
+/** The run currently occupying the composer, if any. */
+export function getActiveComputerRun(): string | null {
+  return current;
+}
+
 export function clearActiveComputerRun(id: string) {
   if (current === id) setActiveComputerRun(null);
 }
+
 
 export function useActiveComputerRun(): string | null {
   const [value, setValue] = useState<string | null>(current);

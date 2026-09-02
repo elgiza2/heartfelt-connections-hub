@@ -9,7 +9,7 @@
 - **Commercial Registry:** 248691
 - **Tax ID:** 774034785
 - **Address:** 58 El-Hegaz St., Amoun Tower, Unit 84, Floor 8, Sheraton Al-Matar, Al-Nozha District, Cairo Governorate, Egypt
-- **Founders:** Hamza Hassan (product/design) and Abdalla Mohamed (engineering/infrastructure)
+- **Founder & CEO:** Hamza Hassan Elgzairy — sole developer and creator of the Megsy model
 - **Headquarters:** Cairo, Egypt
 
 ---
@@ -44,7 +44,7 @@
 
 ### /about — About Page
 - Title: "Two founders. One creative workspace."
-- Founders: Hamza Hassan (Co-Founder, product/design) and Abdalla Mohamed (Co-Founder, engineering/infrastructure)
+- Founder, CEO and only developer: Hamza Hassan Elgzairy (Egyptian company, Megsy LLC)
 - Built in Cairo, Egypt; fully independent, not VC-backed
 - Platform has 5 core tools: AI Chat (Megsy 3.9), Image Generation (Megsy Imagine), Video Generation (Megsy Video), Code Builder (Apps & Web), File Analysis (Documents & Data)
 - Megsy 3.9: conversational AI with web search, deep research, file upload — built on 36+ underlying engines

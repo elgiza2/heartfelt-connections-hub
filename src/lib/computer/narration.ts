@@ -27,7 +27,7 @@ async function ask(prompt: string, conversationId?: string | null): Promise<stri
   return out.trim();
 }
 
-/** 3–5 short imperative steps describing how the agent will attack the task. */
+/** 5–8 concrete steps describing how the agent will attack the task. */
 export async function generateRunPlan(
   task: string,
   conversationId?: string | null,
@@ -35,8 +35,10 @@ export async function generateRunPlan(
   const text = await ask(
     [
       "The assistant is about to perform this task on a real cloud computer (browser + terminal).",
-      "List 3 to 5 very short steps it will take, one per line, no numbering, no markdown, no intro.",
-      "Each step max 8 words. Use the exact same language and dialect as the request.",
+      "Write the execution plan: 5 to 8 concrete steps, one per line, no numbering, no markdown, no intro.",
+      "Each step names what will actually be done (which site is opened, what is searched, what is filled, what is produced) — never vague filler like 'analyse the request' or 'prepare'.",
+      "End with a step that states the deliverable the user will get.",
+      "Max 12 words per step. Use the exact same language and dialect as the request, with no English fragments.",
       "",
       `Task: ${task}`,
     ].join("\n"),
@@ -46,8 +48,9 @@ export async function generateRunPlan(
     .split("\n")
     .map((l) => l.replace(/^[\s\-*•\d.)]+/, "").trim())
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 8);
 }
+
 
 /** Plain-language wrap-up of what actually happened during the run. */
 export async function generateRunSummary(params: {
@@ -58,20 +61,25 @@ export async function generateRunSummary(params: {
   conversationId?: string | null;
 }): Promise<string> {
   const { task, steps, output, failed, conversationId } = params;
+  const { cleanTrace } = await import("@/lib/computer/traceCleanup");
+  const readableSteps = cleanTrace(steps);
   return ask(
     [
       failed
-        ? "A computer task did NOT finish. Explain briefly what was attempted, where it stopped, and one concrete next step."
-        : "A computer task just finished. Tell the user what was done and what the outcome is.",
-      "Write 2-4 sentences of plain text: no markdown, no headings, no bullets, no emojis.",
-      "Use the exact same language and dialect as the request.",
+        ? "A computer task did NOT finish. Report what was attempted, exactly where it stopped, what was produced anyway, and the concrete next step."
+        : "A computer task just finished. Write the final report for the user.",
+      "Write a complete report, not a teaser: a short opening line with the outcome, then the key results (findings, links, files, numbers) as a few short bullets, then one closing line with what the user can do next.",
+      "Write it entirely in the exact same language and dialect as the request — never mix languages, never leave English fragments in an Arabic report.",
+      "Never expose internal engine text: no step ids, checkpoints, tool names, JSON, stack traces, or phrases like 'checkpoint saved' or 'sandbox unavailable'. Translate any such detail into plain user-facing wording or drop it.",
+      "Never claim something succeeded unless the steps or output show it.",
       "",
       `Request: ${task}`,
-      steps.length ? `Steps performed:\n${steps.slice(-20).join("\n")}` : "",
-      output ? `Raw agent output:\n${String(output).slice(0, 4000)}` : "",
+      readableSteps.length ? `Steps performed:\n${readableSteps.slice(-25).join("\n")}` : "",
+      output ? `Raw agent output:\n${String(output).slice(0, 6000)}` : "",
     ]
       .filter(Boolean)
       .join("\n"),
     conversationId,
   );
 }
+

@@ -1,6 +1,17 @@
 import { startJob, subscribeJob, resumeJob } from "@/lib/jobs/client";
 import { getAnonFingerprint } from "@/lib/anonFingerprint";
 import { isFastLaneEligible, tryFastChat } from "@/lib/chat/fastChat";
+import { readChatModelPreferences } from "@/lib/chatModelPreferences";
+
+/** The deep-thinking composer toggle, read fresh for every turn. */
+function deepThinkingEnabled(): boolean {
+  try {
+    return readChatModelPreferences().deepThinking === true;
+  } catch {
+    return false;
+  }
+}
+
 
 export const GUEST_QUOTA_ERROR = "GUEST_QUOTA_EXCEEDED";
 
@@ -270,7 +281,9 @@ export async function streamChat({
         onModel,
         onUsage,
         onReasoning,
+        thinking: deepThinkingEnabled(),
         force: true,
+
       });
       return outcome === "answered" && receivedAnyContent;
     } catch {
@@ -304,7 +317,9 @@ export async function streamChat({
         onModel,
         onUsage,
         onReasoning,
+        thinking: deepThinkingEnabled(),
       });
+
       if (outcome === "answered") {
         await onDone();
         return;
@@ -409,6 +424,10 @@ export async function streamChat({
         activeSkill,
         availableSkills,
         customSystem,
+        // Deep-thinking toggle: the backend turns the model's reasoning stream
+        // on so the UI's thinking panel has real content.
+        thinking: deepThinkingEnabled(),
+
         ...turnCtxPayload,
         zone: (typeof window !== "undefined" && (window as any).__MEGSY_ZONE__) || "megsy",
       });

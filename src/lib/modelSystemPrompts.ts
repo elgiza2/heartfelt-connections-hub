@@ -4,6 +4,8 @@
 // persona. Keep prompts long, rich, and never tell the model to be brief.
 
 import type { ChatMode } from "@/pages/chat/chatConstants";
+import { megsyKnowledgeBlock } from "@/lib/megsyIdentity";
+
 
 const DEPTH_RULE = `
 DEPTH & FORMAT (CRITICAL — NEVER VIOLATE):
@@ -854,5 +856,10 @@ export function buildCustomSystem(
   if (chatMode !== "learning" && chatMode !== "code" && !parts[0]?.startsWith("You are MEGSY, an elite"))
     parts.push(DEPTH_RULE);
 
+  // Identity and product knowledge are appended to EVERY mode so the assistant
+  // never improvises about the company, the founder, or what the site offers.
+  parts.push(megsyKnowledgeBlock());
+
   return parts.join("\n\n");
 }
+
