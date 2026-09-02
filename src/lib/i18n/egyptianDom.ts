@@ -149,6 +149,9 @@ const isFlattenable = (el: Element) => {
   return true;
 };
 
+const originalText = new WeakMap<Text, string>();
+const originalAttrs = new WeakMap<Element, Map<string, string | null>>();
+
 const translateNode = (node: Text) => {
   const parent = node.parentElement;
   if (!parent || SKIP_TAGS.has(parent.tagName)) return;
@@ -165,19 +168,24 @@ const translateNode = (node: Text) => {
     }
     return;
   }
+  if (!originalText.has(node)) originalText.set(node, original);
   // Preserve the surrounding whitespace so inline layouts stay intact.
   const lead = original.match(/^\s*/)?.[0] ?? "";
   const tail = original.match(/\s*$/)?.[0] ?? "";
   node.nodeValue = `${lead}${hit}${tail}`;
 };
 
-
 const translateAttrs = (el: Element) => {
   for (const attr of ATTRS) {
     const value = el.getAttribute(attr);
     if (!value) continue;
     const hit = lookup(value);
-    if (hit) el.setAttribute(attr, hit);
+    if (hit) {
+      const attrs = originalAttrs.get(el) ?? new Map<string, string | null>();
+      if (!attrs.has(attr)) attrs.set(attr, value);
+      originalAttrs.set(el, attrs);
+      el.setAttribute(attr, hit);
+    }
   }
 };
 
@@ -247,4 +255,24 @@ export const stopEgyptianDom = () => {
   observer?.disconnect();
   observer = null;
   queued = [];
+  // Restore text and attributes translated by the DOM fallback before English
+  // renders again. Without this, switching Arabic → English leaves stale Arabic.
+  originalText.forEach?.(() => {});
+  // WeakMaps cannot be iterated, so restore tracked nodes while they are still
+  // reachable from the document, then let the maps be garbage-collected.
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    const text = node as Text;
+    const original = originalText.get(text);
+    if (original !== undefined) text.nodeValue = original;
+    node = walker.nextNode();
+  }
+  document.body.querySelectorAll("*").forEach((el) => {
+    const attrs = originalAttrs.get(el);
+    attrs?.forEach((value, attr) => {
+      if (value === null) el.removeAttribute(attr);
+      else el.setAttribute(attr, value);
+    });
+  });
 };

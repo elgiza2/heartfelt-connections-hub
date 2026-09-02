@@ -38,6 +38,7 @@ export const ReferralsPage = lazy(() => import("@/pages/billing/ReferralsPage"))
 export const ReferralsDashboardTab = lazy(() => import("@/pages/billing/referrals/DashboardTab"));
 export const KPage = lazy(() => import("@/pages/KPage"));
 export const ReferralResourcesPage = lazy(() => import("@/pages/billing/ReferralResourcesPage"));
+export const ReferralPartnerTestPage = lazy(() => import("@/pages/test/ReferralPartnerTestPage"));
 
 /* ── Integrations (single animated hub) ───────────────────────── */
 

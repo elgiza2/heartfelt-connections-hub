@@ -15413,6 +15413,7 @@ export type Database = {
         Returns: Json
       }
       claim_promo_slot: { Args: never; Returns: number }
+      claim_referral_milestone: { Args: never; Returns: Json }
       claim_referral_signup: { Args: { p_code: string }; Returns: Json }
       claim_stale_background_jobs: {
         Args: { stale_seconds?: number }

@@ -15,6 +15,10 @@ import AppSidebar from "@/components/layout/AppSidebar";
 import { useSidebarCollapsed } from "@/hooks/useSidebarCollapsed";
 import MobilePushShell from "@/components/layout/MobilePushShell";
 import { safeCopyText } from "@/lib/safeClipboard";
+import {
+  useReferralMilestone,
+  type UseReferralMilestone,
+} from "@/hooks/useReferralMilestone";
 
 /** Same sidebar toggle glyph used across the app's mobile headers. */
 const SidebarToggleIcon = () => (
@@ -219,6 +223,7 @@ export interface ReferralsContextValue {
   openPromoter: () => void;
   openQr: () => void;
   reload: () => void;
+  milestone: UseReferralMilestone;
 }
 
 const REFERRALS_FALLBACK: ReferralsContextValue = {
@@ -242,6 +247,18 @@ const REFERRALS_FALLBACK: ReferralsContextValue = {
   openPromoter: () => {},
   openQr: () => {},
   reload: () => {},
+  milestone: {
+    state: null,
+    loading: true,
+    failed: false,
+    claiming: false,
+    isPartner: false,
+    referrals: 0,
+    target: 5,
+    remaining: 5,
+    claim: async () => ({ ok: false, granted: false }),
+    reload: async () => {},
+  },
 };
 
 const ReferralsCtx = createContext<ReferralsContextValue | null>(null);
@@ -252,6 +269,7 @@ const ReferralsPage = () => {
   const { pathname } = useLocation();
   const onRewards = pathname.endsWith("/rewards");
   const lang = useUserLang();
+  const milestone = useReferralMilestone();
   const [userId, setUserId] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [refs, setRefs] = useState<Referral[]>([]);
@@ -399,6 +417,7 @@ const ReferralsPage = () => {
     openPromoter,
     openQr: () => {},
     reload: loadData,
+    milestone,
   };
 
   const content = (
@@ -419,7 +438,18 @@ const ReferralsPage = () => {
     </div>
   );
 
-  /** Pinned actions — copy the invite link, or go straight to Pro. */
+  const claimPro = async () => {
+    if (milestone.remaining > 0 || milestone.claiming || milestone.isPartner) return;
+    try {
+      const result = await milestone.claim();
+      if (result.granted) toast.success(translateExactText("Pro activated", lang));
+      else toast.error(translateExactText("We couldn't activate Pro yet", lang));
+    } catch {
+      toast.error(translateExactText("We couldn't activate Pro yet", lang));
+    }
+  };
+
+  /** Pinned actions — share the invite or claim Pro after five verified joins. */
   const actionBar = (
     <div
       className="pointer-events-none fixed inset-x-0 bottom-0 z-30"
@@ -438,10 +468,15 @@ const ReferralsPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate("/settings/billing")}
-            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] border border-border bg-background px-5 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99]"
+            onClick={claimPro}
+            disabled={milestone.loading || milestone.failed || milestone.claiming || milestone.remaining > 0 || milestone.isPartner}
+            className="inline-flex h-[52px] w-full items-center justify-center rounded-[16px] border border-border bg-background px-5 text-[15px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {translateExactText("Get Pro", lang)}
+            {milestone.isPartner
+              ? translateExactText("Pro is active", lang)
+              : milestone.claiming
+                ? translateExactText("Activating Pro…", lang)
+                : translateExactText("Get Pro", lang)}
           </button>
         </div>
       </div>
