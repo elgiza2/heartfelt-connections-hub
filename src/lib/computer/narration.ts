@@ -27,7 +27,7 @@ async function ask(prompt: string, conversationId?: string | null): Promise<stri
   return out.trim();
 }
 
-/** 3–5 short imperative steps describing how the agent will attack the task. */
+/** 5–8 concrete steps describing how the agent will attack the task. */
 export async function generateRunPlan(
   task: string,
   conversationId?: string | null,
@@ -35,8 +35,10 @@ export async function generateRunPlan(
   const text = await ask(
     [
       "The assistant is about to perform this task on a real cloud computer (browser + terminal).",
-      "List 3 to 5 very short steps it will take, one per line, no numbering, no markdown, no intro.",
-      "Each step max 8 words. Use the exact same language and dialect as the request.",
+      "Write the execution plan: 5 to 8 concrete steps, one per line, no numbering, no markdown, no intro.",
+      "Each step names what will actually be done (which site is opened, what is searched, what is filled, what is produced) — never vague filler like 'analyse the request' or 'prepare'.",
+      "End with a step that states the deliverable the user will get.",
+      "Max 12 words per step. Use the exact same language and dialect as the request, with no English fragments.",
       "",
       `Task: ${task}`,
     ].join("\n"),
@@ -46,8 +48,9 @@ export async function generateRunPlan(
     .split("\n")
     .map((l) => l.replace(/^[\s\-*•\d.)]+/, "").trim())
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 8);
 }
+
 
 /** Plain-language wrap-up of what actually happened during the run. */
 export async function generateRunSummary(params: {
