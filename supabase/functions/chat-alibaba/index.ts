@@ -375,7 +375,12 @@ Deno.serve(async (req) => {
           search_options: body.searchEnabled === true
             ? { search_strategy: "agent", enable_source: true }
             : undefined,
-          enable_thinking: false,
+          // Deep thinking is a user-facing toggle: when it is on the model
+          // streams `reasoning_content`, which the UI renders in the thinking
+          // panel. Off keeps the fastest possible first token.
+          enable_thinking: body.thinking === true,
+          ...(body.thinking === true ? { thinking_budget: 2048 } : {}),
+
           temperature: profile.temperature,
           max_tokens: Math.min(Math.max(Number(body.maxTokens) || 8192, 512), 16384),
           messages: [{ role: "system", content: system }, ...messages],
