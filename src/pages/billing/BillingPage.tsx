@@ -1,25 +1,17 @@
-/** @doc Subscription management page. */
+/**
+ * @doc Subscription management — clean, fully localized, theme-token only.
+ * Shows credits, plan state, the referral progress bar (how many members are
+ * still needed for free Pro) and the cancellation / retention flow.
+ */
 import { useState, useEffect } from "react";
-import {
-  ArrowUpRight,
-  BadgeCheck,
-  CalendarClock,
-  Rocket,
-  HeartHandshake,
-  LogOut,
-} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SubShell, SubSection, SubCard } from "@/components/settings/SubShell";
-import ProfileGlassShell, {
-  GlassSection,
-  GlassCard,
-  GlassRow,
-  GlassPrimaryButton,
-  GlassSecondaryButton,
-} from "@/components/profile/ProfileGlassShell";
-import { toast } from "sonner";
+import { SubShell } from "@/components/settings/SubShell";
+import ReferralProgressBar from "@/components/billing/ReferralProgressBar";
+import { useReferralMilestone } from "@/hooks/useReferralMilestone";
+import { translateExactText, useUserLang, type AuthLang } from "@/lib/authI18n";
 import { SAVE_OFFER, saveOfferPrice } from "@/data/pricingData";
 
 type Sub = {
@@ -30,9 +22,9 @@ type Sub = {
   currency: string | null;
 };
 
-const fmtDate = (s?: string | null) =>
+const fmtDate = (s: string | null | undefined, lang: AuthLang) =>
   s
-    ? new Date(s).toLocaleDateString("en-US", {
+    ? new Date(s).toLocaleDateString(lang === "ar-eg" ? "ar-EG" : "en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -47,17 +39,96 @@ const REASONS = [
   "Other",
 ];
 
+/* ── Small presentational primitives (theme tokens only) ─────────── */
+
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`rounded-[18px] border border-border bg-background ${className}`}>{children}</div>
+);
+
+const Row = ({
+  label,
+  hint,
+  onClick,
+  danger,
+}: {
+  label: string;
+  hint?: string;
+  onClick?: () => void;
+  danger?: boolean;
+}) => {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-start transition ${
+        onClick ? "hover:bg-foreground/[0.04] active:scale-[0.995]" : ""
+      }`}
+    >
+      <span className="min-w-0">
+        <span
+          className={`block text-[14.5px] font-medium ${danger ? "text-destructive" : "text-foreground"}`}
+        >
+          {label}
+        </span>
+        {hint && <span className="mt-0.5 block text-[12.5px] text-muted-foreground">{hint}</span>}
+      </span>
+    </Tag>
+  );
+};
+
+const PrimaryButton = ({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex h-[48px] flex-1 items-center justify-center rounded-[14px] bg-foreground px-5 text-[14.5px] font-semibold text-background transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    {children}
+  </button>
+);
+
+const GhostButton = ({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex h-[48px] flex-1 items-center justify-center rounded-[14px] border border-border bg-background px-5 text-[14.5px] font-medium text-foreground transition hover:bg-foreground/[0.05] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+  >
+    {children}
+  </button>
+);
+
 const BillingPage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const lang = useUserLang();
+  const copy = (s: string) => translateExactText(s, lang);
+  const milestone = useReferralMilestone();
+
   const [credits, setCredits] = useState(0);
   const [plan, setPlan] = useState("Free");
   const [sub, setSub] = useState<Sub | null>(null);
 
-  // cancel flow
   const [cancelOpen, setCancelOpen] = useState(false);
   const [step, setStep] = useState<"offer" | "reason">("offer");
-  const [reason, setReason] = useState<string>("");
+  const [reason, setReason] = useState("");
   const [improvement, setImprovement] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -87,569 +158,271 @@ const BillingPage = () => {
     })();
   }, []);
 
-  const goBack = () => navigate("/settings");
   const isActive = sub?.status === "active" || sub?.status === "trialing";
   const priceLabel = sub?.amount_cents
     ? `${(sub.amount_cents / 100).toFixed(0)} ${sub.currency || "EGP"}`
     : null;
-
-  const submitCancel = async () => {
-    if (!reason) {
-      toast.error("Please tell us why you're cancelling");
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
-      const { error } = await supabase.from("contact_submissions").insert({
-        user_id: user.id,
-        subject: "Subscription cancellation",
-        message: `Reason: ${reason}\n\nHow we can improve:\n${improvement || "—"}`,
-      } as any);
-      if (error) throw error;
-      toast.success("Cancellation request sent. Our team will reach out shortly.");
-      setCancelOpen(false);
-      setReason("");
-      setImprovement("");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not submit request");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const monthlyPrice = sub?.amount_cents ? Math.round(sub.amount_cents / 100) : null;
   const halfPrice = monthlyPrice ? saveOfferPrice(monthlyPrice) : null;
 
-  const sendRetentionRequest = async (kind: "discount" | "pause", detail: string) => {
+  const sendSupportRequest = async (subject: string, message: string, success: string) => {
     setSubmitting(true);
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
-      const { error } = await supabase.from("contact_submissions").insert({
-        user_id: user.id,
-        subject: kind === "discount" ? "Retention offer — 50% for 2 months" : "Subscription pause request",
-        message: detail,
-      } as any);
+      const { error } = await supabase
+        .from("contact_submissions")
+        .insert({ user_id: user.id, subject, message } as never);
       if (error) throw error;
-      toast.success(
-        kind === "discount"
-          ? "Your discount request is in — we'll apply it within a few minutes."
-          : "Pause requested. We'll freeze your plan and keep everything saved.",
-      );
+      toast.success(copy(success));
       setCancelOpen(false);
       setStep("offer");
       setReason("");
       setImprovement("");
-    } catch (e: any) {
-      toast.error(e?.message || "Could not submit request");
+    } catch (e) {
+      toast.error(copy("Could not submit request"));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const SaveOffer = (
-    <GlassCard>
-      <div style={{ padding: 16, display: "grid", gap: 14 }}>
-        <div>
-          <p style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>{SAVE_OFFER.titleEn}</p>
-          <p style={{ fontSize: 13, color: "var(--overlay-white-70)", marginTop: 6, lineHeight: 1.55 }}>
-            {SAVE_OFFER.bodyEn}
+  const submitCancel = () => {
+    if (!reason) {
+      toast.error(copy("Please tell us why you're cancelling"));
+      return;
+    }
+    void sendSupportRequest(
+      "Subscription cancellation",
+      `Reason: ${reason}\n\nHow we can improve:\n${improvement || "—"}`,
+      "Cancellation request sent. Our team will reach out shortly.",
+    );
+  };
+
+  /* ── Sections ─────────────────────────────────────────────────── */
+
+  const creditsCard = (
+    <Card className="px-5 py-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            {copy("Message credits")}
           </p>
+          <p className="mt-2 flex items-baseline gap-2 text-foreground" dir="ltr">
+            <span className="text-[40px] font-semibold leading-none tracking-[-0.03em]">
+              {credits.toLocaleString(lang === "ar-eg" ? "ar-EG" : "en-US")}
+            </span>
+            <span className="text-[14px] font-medium text-muted-foreground">MC</span>
+          </p>
+          <p className="mt-2 text-[12.5px] text-muted-foreground">{copy("Available on your account")}</p>
         </div>
-
-        {halfPrice != null && monthlyPrice != null && (
-          <div
-            style={{
-              borderRadius: 14,
-              border: "1px solid var(--overlay-white-14)",
-              background: "var(--overlay-white-04)",
-              padding: 14,
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 26, fontWeight: 600, color: "#fff" }}>
-                {halfPrice} {sub?.currency || "EGP"}
-              </span>
-              <span style={{ fontSize: 13, color: "var(--overlay-white-70)", textDecoration: "line-through" }}>
-                {monthlyPrice} {sub?.currency || "EGP"}
-              </span>
-              <span style={{ fontSize: 12.5, color: "var(--overlay-white-70)" }}>
-                / month for {SAVE_OFFER.months} months
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div style={{ display: "grid", gap: 8 }}>
-          <GlassPrimaryButton
-            onClick={() =>
-              sendRetentionRequest(
-                "discount",
-                `Customer accepted the retention offer: ${SAVE_OFFER.discountPercent}% off for ${SAVE_OFFER.months} months on plan ${sub?.plan || plan}.`,
-              )
-            }
-            disabled={submitting}
-          >
-            {submitting ? "Sending…" : SAVE_OFFER.discountCtaEn}
-          </GlassPrimaryButton>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 12.5, color: "var(--overlay-white-70)" }}>Or pause for</span>
-            {SAVE_OFFER.pauseMonths.map((m) => (
-              <button
-                key={m}
-                disabled={submitting}
-                onClick={() =>
-                  sendRetentionRequest("pause", `Customer asked to pause the subscription for ${m} month(s).`)
-                }
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  fontSize: 12.5,
-                  fontWeight: 500,
-                  border: "1px solid var(--overlay-white-14)",
-                  background: "var(--overlay-white-04)",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                {m} {m === 1 ? "month" : "months"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ng-actions" style={{ marginTop: 4 }}>
-          <GlassSecondaryButton onClick={() => setStep("reason")}>
-            No thanks, cancel
-          </GlassSecondaryButton>
-          <GlassPrimaryButton onClick={() => setCancelOpen(false)}>Keep plan</GlassPrimaryButton>
-        </div>
+        <span className="shrink-0 rounded-full border border-border px-3 py-1 text-[11.5px] font-semibold uppercase tracking-[0.14em] text-foreground">
+          {plan}
+        </span>
       </div>
-    </GlassCard>
+      <div className="mt-5 flex gap-2">
+        <PrimaryButton onClick={() => navigate("/pricing")}>{copy("Top up")}</PrimaryButton>
+        <GhostButton onClick={() => navigate("/settings/referrals")}>
+          {copy("Earn free MC")}
+        </GhostButton>
+      </div>
+    </Card>
   );
 
-  const CancelForm = (
-    <GlassCard>
-      <div style={{ padding: 16, display: "grid", gap: 14 }}>
-        <div>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 8 }}>
-            Why are you cancelling?
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {REASONS.map((r) => {
-              const active = reason === r;
-              return (
-                <button
-                  key={r}
-                  onClick={() => setReason(r)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 999,
-                    fontSize: 12.5,
-                    fontWeight: 500,
-                    border: `1px solid ${active ? "rgba(255,255,255,0.55)" : "var(--overlay-white-14)"}`,
-                    background: active ? "rgba(255,255,255,0.16)" : "var(--overlay-white-04)",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
-                >
-                  {r}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <label style={{ fontSize: 12, color: "var(--overlay-white-70)", display: "block", marginBottom: 6 }}>
-            How can we improve?
-          </label>
-          <textarea
-            placeholder="Optional — what would have kept you here?"
-            value={improvement}
-            onChange={(e) => setImprovement(e.target.value)}
-            rows={3}
-            style={{
-              width: "100%",
-              padding: "10px 12px",
-              borderRadius: 12,
-              background: "var(--overlay-white-04)",
-              border: "1px solid var(--overlay-white-12)",
-              color: "#fff",
-              fontSize: 13,
-              resize: "vertical",
-              fontFamily: "inherit",
-            }}
-          />
-        </div>
-        <div className="ng-actions" style={{ marginTop: 4 }}>
-          <GlassSecondaryButton onClick={() => setCancelOpen(false)}>
-            Keep plan
-          </GlassSecondaryButton>
-          <GlassPrimaryButton onClick={submitCancel} disabled={submitting}>
-            {submitting ? "Sending…" : "Confirm cancel"}
-          </GlassPrimaryButton>
-        </div>
-      </div>
-    </GlassCard>
+  const progressCard = (
+    <ReferralProgressBar
+      referrals={milestone.referrals}
+      target={milestone.target}
+      granted={milestone.isPartner}
+      expiresAt={milestone.state?.expires_at ?? null}
+    />
   );
 
-  const CancelFlow = SAVE_OFFER.enabled && step === "offer" ? SaveOffer : CancelForm;
+  const planCard = (
+    <Card className="divide-y divide-border">
+      <Row
+        label={copy("Status")}
+        hint={
+          isActive
+            ? priceLabel
+              ? `${copy(String(sub?.status))} · ${priceLabel}`
+              : copy(String(sub?.status))
+            : copy("No active subscription")
+        }
+      />
+      {isActive && sub?.current_period_end && (
+        <Row label={copy("Next renewal")} hint={fmtDate(sub.current_period_end, lang)} />
+      )}
+    </Card>
+  );
 
+  const manageCard = (
+    <Card className="divide-y divide-border">
+      <Row
+        label={isActive ? copy("Change plan") : copy("Upgrade plan")}
+        hint={copy("View pricing and switch plans")}
+        onClick={() => navigate("/pricing")}
+      />
+      <Row
+        label={copy("Referrals")}
+        hint={copy("Invite friends and unlock bonuses")}
+        onClick={() => navigate("/settings/referrals")}
+      />
+      {isActive && !cancelOpen && (
+        <Row
+          danger
+          label={copy("Cancel subscription")}
+          hint={copy("We'll ask a quick question")}
+          onClick={() => {
+            setStep("offer");
+            setCancelOpen(true);
+          }}
+        />
+      )}
+    </Card>
+  );
+
+  const saveOffer = (
+    <Card className="px-5 py-5">
+      <p className="text-[15px] font-semibold text-foreground">{SAVE_OFFER.titleEn}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{SAVE_OFFER.bodyEn}</p>
+
+      {halfPrice != null && monthlyPrice != null && (
+        <div className="mt-4 rounded-[14px] border border-border px-4 py-3" dir="ltr">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[24px] font-semibold text-foreground">
+              {halfPrice} {sub?.currency || "EGP"}
+            </span>
+            <span className="text-[13px] text-muted-foreground line-through">
+              {monthlyPrice} {sub?.currency || "EGP"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 flex gap-2">
+        <PrimaryButton
+          disabled={submitting}
+          onClick={() =>
+            void sendSupportRequest(
+              "Retention offer — 50% for 2 months",
+              `Customer accepted the retention offer: ${SAVE_OFFER.discountPercent}% off for ${SAVE_OFFER.months} months on plan ${sub?.plan || plan}.`,
+              "Your discount request is in — we'll apply it within a few minutes.",
+            )
+          }
+        >
+          {submitting ? copy("Sending…") : SAVE_OFFER.discountCtaEn}
+        </PrimaryButton>
+        <GhostButton onClick={() => setStep("reason")}>{copy("No thanks, cancel")}</GhostButton>
+      </div>
+    </Card>
+  );
+
+  const cancelForm = (
+    <Card className="px-5 py-5">
+      <p className="text-[14px] font-semibold text-foreground">{copy("Why are you cancelling?")}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {REASONS.map((r) => (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setReason(r)}
+            className={`rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition ${
+              reason === r
+                ? "border-foreground bg-foreground text-background"
+                : "border-border text-foreground hover:bg-foreground/[0.05]"
+            }`}
+          >
+            {copy(r)}
+          </button>
+        ))}
+      </div>
+
+      <label className="mt-4 block text-[12.5px] text-muted-foreground">
+        {copy("How can we improve?")}
+      </label>
+      <textarea
+        value={improvement}
+        onChange={(e) => setImprovement(e.target.value)}
+        rows={3}
+        className="mt-2 w-full resize-y rounded-[14px] border border-border bg-background px-3.5 py-3 text-[13.5px] text-foreground outline-none transition focus:border-foreground/40"
+      />
+
+      <div className="mt-4 flex gap-2">
+        <GhostButton onClick={() => setCancelOpen(false)}>{copy("Keep plan")}</GhostButton>
+        <PrimaryButton onClick={submitCancel} disabled={submitting}>
+          {submitting ? copy("Sending…") : copy("Confirm cancel")}
+        </PrimaryButton>
+      </div>
+    </Card>
+  );
+
+  const cancelFlow = SAVE_OFFER.enabled && step === "offer" ? saveOffer : cancelForm;
+
+  const sections = (
+    <div className="flex flex-col gap-5">
+      {creditsCard}
+      {progressCard}
+
+      <section className="flex flex-col gap-2">
+        <h2 className="px-1 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {copy("Plan")}
+        </h2>
+        {planCard}
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="px-1 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          {copy("Manage")}
+        </h2>
+        {manageCard}
+      </section>
+
+      {isActive && cancelOpen && (
+        <section className="flex flex-col gap-2">
+          <h2 className="px-1 text-[11.5px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            {step === "offer" ? copy("Wait — an offer for you") : copy("Before you go")}
+          </h2>
+          {cancelFlow}
+        </section>
+      )}
+    </div>
+  );
 
   if (isMobile) {
-    const planLabel = (plan || "Free").toString();
     return (
-      <div className="bpv2-root">
-        <style>{bpv2Css}</style>
-        <header className="bpv2-topbar">
-          <button className="bpv2-back" aria-label="Back" onClick={goBack}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+      <div className="min-h-[100dvh] bg-background text-foreground">
+        <header
+          className="sticky top-0 z-10 flex items-center gap-2 bg-background px-4 pb-3"
+          style={{ paddingTop: "max(env(safe-area-inset-top), 14px)" }}
+        >
+          <button
+            type="button"
+            aria-label={copy("Back")}
+            onClick={() => navigate("/settings")}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition active:scale-95"
+          >
+            <span aria-hidden className="text-[18px] leading-none rtl:rotate-180">
+              ‹
+            </span>
           </button>
-          <h1 className="bpv2-title">Billing</h1>
-          <div style={{ width: 36 }} />
+          <h1 className="text-[17px] font-semibold tracking-[-0.01em]">{copy("Subscription")}</h1>
         </header>
-
-        <main className="bpv2-main">
-          {/* Hero: credits */}
-          <section className="bpv2-hero">
-            <div className="bpv2-hero-top">
-              <span className="bpv2-eyebrow">Message credits</span>
-              <span className="bpv2-plan-chip">{planLabel}</span>
-            </div>
-            <div className="bpv2-credits">
-              <span className="bpv2-credits-num">{credits.toLocaleString()}</span>
-              <span className="bpv2-credits-unit">MC</span>
-            </div>
-            <p className="bpv2-hero-sub">Available on your account</p>
-            <div className="bpv2-hero-actions">
-              <button className="bpv2-btn bpv2-btn-primary" onClick={() => navigate("/pricing")}>
-                Top up
-                <ArrowUpRight className="w-4 h-4" />
-              </button>
-              <button className="bpv2-btn bpv2-btn-ghost" onClick={() => navigate("/settings/referrals")}>
-                Earn free MC
-              </button>
-            </div>
-          </section>
-
-          {/* Plan details */}
-          <section className="bpv2-section">
-            <h2 className="bpv2-section-title">Plan</h2>
-            <div className="bpv2-card">
-              <div className="bpv2-row">
-                <div className="bpv2-row-icon"><BadgeCheck className="w-[18px] h-[18px]" /></div>
-                <div className="bpv2-row-body">
-                  <div className="bpv2-row-label">Status</div>
-                  <div className="bpv2-row-hint">
-                    {isActive
-                      ? priceLabel
-                        ? `${sub?.status} · ${priceLabel}`
-                        : String(sub?.status)
-                      : "No active subscription"}
-                  </div>
-                </div>
-              </div>
-              {isActive && sub?.current_period_end && (
-                <div className="bpv2-row bpv2-row-b">
-                  <div className="bpv2-row-icon"><CalendarClock className="w-[18px] h-[18px]" /></div>
-                  <div className="bpv2-row-body">
-                    <div className="bpv2-row-label">Next renewal</div>
-                    <div className="bpv2-row-hint">{fmtDate(sub.current_period_end)}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-
-          {/* Manage */}
-          <section className="bpv2-section">
-            <h2 className="bpv2-section-title">Manage</h2>
-            <div className="bpv2-card">
-              <button className="bpv2-row bpv2-row-btn" onClick={() => navigate("/pricing")}>
-                <div className="bpv2-row-icon"><Rocket className="w-[18px] h-[18px]" /></div>
-                <div className="bpv2-row-body">
-                  <div className="bpv2-row-label">{isActive ? "Change plan" : "Upgrade plan"}</div>
-                  <div className="bpv2-row-hint">View pricing and switch plans</div>
-                </div>
-                <ArrowUpRight className="w-4 h-4 bpv2-row-chev" />
-              </button>
-              <button className="bpv2-row bpv2-row-btn bpv2-row-b" onClick={() => navigate("/settings/referrals")}>
-                <div className="bpv2-row-icon"><HeartHandshake className="w-[18px] h-[18px]" /></div>
-                <div className="bpv2-row-body">
-                  <div className="bpv2-row-label">Referrals</div>
-                  <div className="bpv2-row-hint">Invite friends and unlock bonuses</div>
-                </div>
-                <ArrowUpRight className="w-4 h-4 bpv2-row-chev" />
-              </button>
-              {isActive && !cancelOpen && (
-                <button className="bpv2-row bpv2-row-btn bpv2-row-b bpv2-row-danger" onClick={() => { setStep("offer"); setCancelOpen(true); }}>
-                  <div className="bpv2-row-icon"><LogOut className="w-[18px] h-[18px]" /></div>
-                  <div className="bpv2-row-body">
-                    <div className="bpv2-row-label">Cancel subscription</div>
-                    <div className="bpv2-row-hint">We'll ask a quick question</div>
-                  </div>
-                </button>
-              )}
-            </div>
-          </section>
-
-          {isActive && cancelOpen && (
-            <section className="bpv2-section">
-              <h2 className="bpv2-section-title">{step === "offer" ? "Wait — an offer for you" : "Before you go"}</h2>
-              <div className="bpv2-card bpv2-card-pad">{CancelFlow}</div>
-            </section>
-          )}
-
-          <div className="bpv2-bottom-spacer" />
-        </main>
+        <main className="mx-auto w-full max-w-[520px] px-4 pb-16 pt-2">{sections}</main>
       </div>
     );
   }
 
-
   return (
     <SubShell
-      title="Subscription"
-      subtitle="Manage your plan and message credits."
+      title={copy("Subscription")}
+      subtitle={copy("Manage your plan and message credits.")}
       backTo="/settings"
     >
-      <SubSection title="Credits" description="Message credits available on your account.">
-        <SubCard>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-medium">
-                Message credits
-              </p>
-              <p className="mt-2 text-[32px] font-semibold text-foreground leading-none">
-                {credits.toLocaleString()}
-                <span className="ml-2 text-[13px] font-medium text-muted-foreground">MC</span>
-              </p>
-            </div>
-            <span className="text-[11px] font-semibold px-3 py-1 rounded-full border border-border bg-background/60 uppercase tracking-[0.14em]">
-              {plan}
-            </span>
-          </div>
-          <div className="mt-5 flex items-center justify-end gap-2">
-            <button
-              onClick={() => navigate("/settings/referrals")}
-              className="px-4 py-2 rounded-lg text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Earn MC
-            </button>
-            <button
-              onClick={() => navigate("/pricing")}
-              className="px-4 py-2 rounded-lg text-[13px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors inline-flex items-center gap-1.5"
-            >
-              Top up <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </SubCard>
-      </SubSection>
-
-      <SubSection title="Plan details" description="Your active subscription.">
-        <SubCard>
-          <div className="grid grid-cols-2 gap-4 text-[13px]">
-            <div>
-              <p className="text-muted-foreground text-[11px] uppercase tracking-[0.14em]">Status</p>
-              <p className="mt-1 font-medium text-foreground">{sub?.status || "free"}</p>
-            </div>
-            {isActive && (
-              <>
-                <div>
-                  <p className="text-muted-foreground text-[11px] uppercase tracking-[0.14em]">Price</p>
-                  <p className="mt-1 font-medium text-foreground">{priceLabel || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground text-[11px] uppercase tracking-[0.14em]">Renews on</p>
-                  <p className="mt-1 font-medium text-foreground">{fmtDate(sub?.current_period_end)}</p>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="mt-5 flex items-center justify-end gap-2">
-            {isActive && (
-              <button
-                onClick={() => { setStep("offer"); setCancelOpen((v) => !v); }}
-                className="px-4 py-2 rounded-lg text-[13px] font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
-              >
-                Cancel subscription
-              </button>
-            )}
-            <button
-              onClick={() => navigate("/pricing")}
-              className="px-4 py-2 rounded-lg text-[13px] font-medium bg-foreground text-background hover:bg-foreground/90 transition-colors inline-flex items-center gap-1.5"
-            >
-              {isActive ? "Change plan" : "Upgrade"} <ArrowUpRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </SubCard>
-      </SubSection>
-
-      {isActive && cancelOpen && (
-        <SubSection title={step === "offer" ? "Wait — an offer for you" : "Before you go"} description={step === "offer" ? "Half price for two months, or pause instead." : "Tell us why so we can improve."}>
-          <SubCard>{CancelFlow}</SubCard>
-        </SubSection>
-      )}
+      {sections}
     </SubShell>
   );
 };
 
-const bpv2Css = `
-.bpv2-root {
-  min-height: 100dvh;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground) / 0.9);
-  font-family: "DM Sans", -apple-system, "SF Pro Text", Inter, sans-serif;
-  display: flex; flex-direction: column; align-items: center;
-}
-.bpv2-topbar {
-  position: sticky; top: 0; z-index: 10;
-  width: 100%; max-width: 480px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px calc(14px + env(safe-area-inset-top, 0px));
-  padding-top: calc(14px + env(safe-area-inset-top, 0px));
-  background: linear-gradient(to bottom, #000 82%, transparent);
-  backdrop-filter: blur(20px);
-}
-.bpv2-back {
-  width: 36px; height: 36px; border-radius: 999px;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: hsl(var(--foreground) / 0.9); cursor: pointer;
-  transition: background 160ms ease, transform 120ms ease;
-}
-.bpv2-back:active { transform: scale(0.94); background: rgba(255,255,255,0.10); }
-.bpv2-title {
-  font-family: "Space Grotesk", -apple-system, "SF Pro Display", Inter, sans-serif;
-  font-size: 17px; font-weight: 500; letter-spacing: -0.01em;
-  color: hsl(var(--foreground)); margin: 0;
-}
-
-.bpv2-main {
-  width: 100%; max-width: 480px;
-  padding: 8px 16px 24px;
-  display: flex; flex-direction: column; gap: 24px;
-}
-
-.bpv2-hero {
-  border: 1px solid rgba(255,255,255,0.08);
-  background:
-    radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,0.06), transparent 60%),
-    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
-  border-radius: 24px;
-  padding: 20px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.bpv2-hero-top {
-  display: flex; align-items: center; justify-content: space-between;
-}
-.bpv2-eyebrow {
-  font-size: 11px; font-weight: 500;
-  letter-spacing: 0.16em; text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
-}
-.bpv2-plan-chip {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-  padding: 5px 10px; border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.10);
-  color: hsl(var(--foreground));
-}
-.bpv2-credits {
-  display: flex; align-items: baseline; gap: 8px;
-  font-family: "Space Grotesk", sans-serif;
-}
-.bpv2-credits-num {
-  font-size: 56px; font-weight: 500; letter-spacing: -0.03em;
-  color: hsl(var(--foreground)); line-height: 1;
-}
-.bpv2-credits-unit {
-  font-size: 16px; font-weight: 500; color: hsl(var(--muted-foreground));
-}
-.bpv2-hero-sub {
-  margin: 0; font-size: 13px; color: hsl(var(--muted-foreground));
-}
-.bpv2-hero-actions {
-  display: flex; gap: 8px; margin-top: 4px;
-}
-.bpv2-btn {
-  flex: 1;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 12px 14px; border-radius: 14px;
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 14px; font-weight: 500; letter-spacing: -0.005em;
-  cursor: pointer; border: 1px solid transparent;
-  transition: transform 120ms ease, background 160ms ease;
-}
-.bpv2-btn:active { transform: scale(0.98); }
-.bpv2-btn-primary {
-  background: hsl(var(--primary)); color: hsl(var(--primary-foreground));
-}
-.bpv2-btn-primary:hover { background: hsl(var(--primary) / 0.88); }
-.bpv2-btn-ghost {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.10);
-  color: hsl(var(--foreground));
-}
-.bpv2-btn-ghost:hover { background: rgba(255,255,255,0.09); }
-
-.bpv2-section { display: flex; flex-direction: column; gap: 10px; }
-.bpv2-section-title {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 11px; font-weight: 500;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: hsl(var(--muted-foreground));
-  margin: 0 4px;
-}
-.bpv2-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  overflow: hidden;
-}
-.bpv2-card-pad { padding: 4px; }
-
-.bpv2-row {
-  width: 100%;
-  display: flex; align-items: center; gap: 14px;
-  padding: 14px 16px;
-  background: transparent; border: 0;
-  color: hsl(var(--foreground) / 0.9); text-align: left; cursor: default;
-  font: inherit;
-}
-.bpv2-row-btn { cursor: pointer; transition: background 140ms ease; }
-.bpv2-row-btn:active { background: rgba(255,255,255,0.05); }
-.bpv2-row-b { border-top: 1px solid rgba(255,255,255,0.06); }
-.bpv2-row-icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.06);
-  display: inline-flex; align-items: center; justify-content: center;
-  color: hsl(var(--foreground) / 0.9);
-}
-.bpv2-row-body { flex: 1; min-width: 0; }
-.bpv2-row-label {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 15px; font-weight: 500; color: hsl(var(--foreground)); letter-spacing: -0.005em;
-}
-.bpv2-row-hint { font-size: 12.5px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
-.bpv2-row-chev { color: hsl(var(--muted-foreground)); flex-shrink: 0; }
-.bpv2-row-danger .bpv2-row-label { color: hsl(var(--destructive)); }
-.bpv2-row-danger .bpv2-row-icon { color: hsl(var(--destructive)); background: rgba(255,69,58,0.10); }
-
-.bpv2-bottom-spacer { height: calc(env(safe-area-inset-bottom, 0px) + 32px); }
-`;
-
 export default BillingPage;
-
