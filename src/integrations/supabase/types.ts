@@ -15584,6 +15584,7 @@ export type Database = {
         }
       }
       expire_prize_rewards: { Args: never; Returns: number }
+      expire_referral_pro_grants: { Args: never; Returns: number }
       game_crash_cashout: {
         Args: { _at: number; _bet_id: string; _telegram_id: number }
         Returns: Json
