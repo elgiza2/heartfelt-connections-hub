@@ -28,7 +28,6 @@ import {
   BillingSuccessPage,
   ReferralsPage,
   ReferralsDashboardTab,
-  ReferralsRewardsTab,
   KPage,
   ReferralResourcesPage,
   // integrations hub
@@ -128,7 +127,6 @@ export const AppRoutes = ({ currentUserId }: { currentUserId: string | null }) =
         element={<ProtectedRoute><ReferralsPage /></ProtectedRoute>}
       >
         <Route index element={<ReferralsDashboardTab />} />
-        <Route path="rewards" element={<ReferralsRewardsTab />} />
       </Route>
       <Route
         path="/settings/referrals/resources"
